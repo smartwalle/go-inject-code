@@ -1,4 +1,4 @@
-package tag
+package inject_tag
 
 import (
 	"bytes"
@@ -22,33 +22,44 @@ type TextArea struct {
 	InjectTag  string
 }
 
-func ProcessField(field *ast.Field, comments []*ast.Comment) internal.TextArea {
-	var tags = make([]string, 0, len(comments))
-	for _, comment := range comments {
-		var tag = findTagString(comment.Text)
-		if tag == "" {
-			continue
+func NewProcessField(genTags []string) internal.FieldProcessor {
+	return func(field *ast.Field, comments []*ast.Comment) internal.TextArea {
+		var tags = make([]string, 0, len(comments)+len(genTags))
+		for _, comment := range comments {
+			var tag = findTagString(comment.Text)
+			if tag == "" {
+				continue
+			}
+			tags = append(tags, tag)
 		}
-		tags = append(tags, tag)
-	}
 
-	if len(tags) == 0 {
-		return nil
-	}
+		if len(field.Names) > 0 {
+			if field.Names[0].IsExported() {
+				var name = internal.SnakeCase(field.Names[0].Name)
+				for _, tag := range genTags {
+					tags = append(tags, fmt.Sprintf("%s:\"%s\"", tag, name))
+				}
+			}
+		}
 
-	var currentTag string
-	if field.Tag != nil && len(field.Tag.Value) > 0 {
-		currentTag = field.Tag.Value
-		currentTag = field.Tag.Value[1 : len(currentTag)-1]
-	}
+		if len(tags) == 0 {
+			return nil
+		}
 
-	var nArea = &TextArea{
-		Start:      int(field.Pos()),
-		End:        int(field.End()),
-		CurrentTag: currentTag,
-		InjectTag:  strings.Join(tags, " "),
+		var currentTag string
+		if field.Tag != nil && len(field.Tag.Value) > 0 {
+			currentTag = field.Tag.Value
+			currentTag = field.Tag.Value[1 : len(currentTag)-1]
+		}
+
+		var nArea = &TextArea{
+			Start:      int(field.Pos()),
+			End:        int(field.End()),
+			CurrentTag: currentTag,
+			InjectTag:  strings.Join(tags, " "),
+		}
+		return nArea
 	}
-	return nArea
 }
 
 // findTagString 从字符串中提取出要注入的 tag 字符串内容。

@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"go-inject-code/internal"
-	"go-inject-code/internal/tag"
+	"go-inject-code/internal/inject_tag"
 	"io/fs"
 	"log"
 	"path/filepath"
@@ -12,7 +12,9 @@ import (
 
 func main() {
 	var input string
-	flag.StringVar(&input, "input", "", "指定 go go 源代码文件所在目录")
+	var tag string
+	flag.StringVar(&input, "input", "", "指定 go go 源代码文件所在目录，如：--input \"./\"")
+	flag.StringVar(&tag, "tag", "", "自动生成 tag, 多个 tag 使用 '|' 进行分割，如： --tag \"sql|bson\"")
 	flag.Parse()
 
 	if len(input) == 0 {
@@ -20,7 +22,7 @@ func main() {
 		return
 	}
 
-	internal.RegisterFieldProcessor(tag.ProcessField)
+	internal.RegisterFieldProcessor(inject_tag.NewProcessField(strings.Split(tag, "|")))
 
 	filepath.Walk(input, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {

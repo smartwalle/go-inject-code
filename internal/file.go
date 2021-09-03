@@ -6,6 +6,8 @@ import (
 	"go/token"
 	"io/ioutil"
 	"os"
+	"regexp"
+	"strings"
 )
 
 type FieldProcessor func(field *ast.Field, comments []*ast.Comment) TextArea
@@ -102,4 +104,11 @@ func Write(path string, areas []TextArea) (err error) {
 	}
 
 	return
+}
+
+var matchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")
+
+func SnakeCase(str string) string {
+	snake := matchAllCap.ReplaceAllString(str, "${1}_${2}")
+	return strings.ToLower(snake)
 }
