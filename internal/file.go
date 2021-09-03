@@ -6,30 +6,23 @@ import (
 	"go/token"
 	"io/ioutil"
 	"os"
-	"regexp"
 )
+
+type FieldProcessor func(field *ast.Field, comments []*ast.Comment) TextArea
 
 var (
-	tagComment = regexp.MustCompile(`^//.*?@GoTag\((.*)\)*`)
-	tagSplit   = regexp.MustCompile(`[\w_]+:"[^"]+"`)
-	tagInject  = regexp.MustCompile("`.+`$")
+	fieldProcessors = make([]FieldProcessor, 0, 1)
 )
 
-type TextArea struct {
-	Start      int
-	End        int
-	CurrentTag string
-	InjectTag  string
+func RegisterFieldProcessor(p FieldProcessor) {
+	if p == nil {
+		return
+	}
+	fieldProcessors = append(fieldProcessors, p)
 }
 
-// TagFromComment 从字符串中提取出要注入的 tag 字符串内容。
-// 如：从 @GoTag(bson:"_id") 提取出 bson:"_id"。
-func TagFromComment(comment string) (tag string) {
-	match := tagComment.FindStringSubmatch(comment)
-	if len(match) == 2 {
-		tag = match[1]
-	}
-	return
+type TextArea interface {
+	Inject(content []byte) []byte
 }
 
 func Load(path string) (areas []TextArea, err error) {
@@ -63,7 +56,7 @@ func Load(path string) (areas []TextArea, err error) {
 		}
 
 		for _, field := range structDecl.Fields.List {
-			var comments = make([]*ast.Comment, 0, 1)
+			var comments = make([]*ast.Comment, 0, 2)
 
 			if field.Doc != nil {
 				comments = append(comments, field.Doc.List...)
@@ -73,25 +66,15 @@ func Load(path string) (areas []TextArea, err error) {
 				comments = append(comments, field.Comment.List...)
 			}
 
-			for _, comment := range comments {
-				var tag = TagFromComment(comment.Text)
-				if tag == "" {
-					continue
-				}
+			if len(comments) == 0 {
+				continue
+			}
 
-				var currentTag string
-				if field.Tag != nil && len(field.Tag.Value) > 0 {
-					currentTag = field.Tag.Value
-					currentTag = field.Tag.Value[1 : len(currentTag)-1]
+			for _, p := range fieldProcessors {
+				var nArea = p(field, comments)
+				if nArea != nil {
+					areas = append(areas, nArea)
 				}
-
-				var nArea = TextArea{
-					Start:      int(field.Pos()),
-					End:        int(field.End()),
-					CurrentTag: currentTag,
-					InjectTag:  tag,
-				}
-				areas = append(areas, nArea)
 			}
 		}
 	}
@@ -115,7 +98,7 @@ func Write(path string, areas []TextArea) (err error) {
 
 	for i := range areas {
 		area := areas[len(areas)-i-1]
-		content = InjectTag(content, area)
+		content = area.Inject(content)
 	}
 
 	if err = ioutil.WriteFile(path, content, 0644); err != nil {

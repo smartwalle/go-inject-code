@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"go-inject-code/internal"
+	"go-inject-code/internal/tag"
 	"io/fs"
 	"log"
 	"path/filepath"
@@ -18,6 +19,8 @@ func main() {
 		log.Fatal("需要指定 go 源代码文件所在目录，如: --input \"./\"")
 		return
 	}
+
+	internal.RegisterFieldProcessor(tag.ProcessField)
 
 	filepath.Walk(input, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {
@@ -42,6 +45,7 @@ func main() {
 
 		if err = internal.Write(path, areas); err != nil {
 			log.Fatal(err)
+			return err
 		}
 		return nil
 	})
