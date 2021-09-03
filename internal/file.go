@@ -66,10 +66,6 @@ func Load(path string) (areas []TextArea, err error) {
 				comments = append(comments, field.Comment.List...)
 			}
 
-			if len(comments) == 0 {
-				continue
-			}
-
 			for _, p := range fieldProcessors {
 				var nArea = p(field, comments)
 				if nArea != nil {
