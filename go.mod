@@ -1,3 +1,3 @@
-module github.com/smartwalle/go-inject-code
+module go-inject-code
 
 go 1.17
