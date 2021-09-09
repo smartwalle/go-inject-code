@@ -3,7 +3,7 @@ package inject_tag
 import (
 	"bytes"
 	"fmt"
-	"go-inject-code/internal"
+	"github.com/smartwalle/go-inject-code/internal"
 	"go/ast"
 	"regexp"
 	"strings"

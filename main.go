@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"go-inject-code/internal"
-	"go-inject-code/internal/inject_tag"
+	"github.com/smartwalle/go-inject-code/internal"
+	"github.com/smartwalle/go-inject-code/internal/inject_tag"
 	"io/fs"
 	"log"
 	"path/filepath"
