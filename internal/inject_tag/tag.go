@@ -15,13 +15,6 @@ var (
 	tagInject  = regexp.MustCompile("`.+`$")
 )
 
-type TextArea struct {
-	Start      int
-	End        int
-	CurrentTag string
-	InjectTag  string
-}
-
 func NewProcessField(genTags []string) internal.FieldProcessor {
 	return func(field *ast.Field, comments []*ast.Comment) internal.TextArea {
 		var tags = make([]string, 0, len(comments)+len(genTags))
@@ -70,6 +63,13 @@ func findTagString(comment string) (tag string) {
 		tag = match[1]
 	}
 	return
+}
+
+type TextArea struct {
+	Start      int
+	End        int
+	CurrentTag string
+	InjectTag  string
 }
 
 func (this *TextArea) Inject(content []byte) []byte {
