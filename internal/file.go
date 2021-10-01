@@ -10,10 +10,12 @@ import (
 	"strings"
 )
 
-type FieldProcessor func(field *ast.Field, comments []*ast.Comment) TextArea
+type FieldProcessor func(f *ast.Field, comments []*ast.Comment) TextArea
+type StructProcessor func(s *ast.StructType, comments []*ast.Comment) TextArea
 
 var (
-	fieldProcessors = make([]FieldProcessor, 0, 1)
+	fieldProcessors  = make([]FieldProcessor, 0, 1)
+	structProcessors = make([]StructProcessor, 0, 1)
 )
 
 func RegisterFieldProcessor(p FieldProcessor) {
@@ -21,6 +23,13 @@ func RegisterFieldProcessor(p FieldProcessor) {
 		return
 	}
 	fieldProcessors = append(fieldProcessors, p)
+}
+
+func RegisterStructProcessor(p StructProcessor) {
+	if p == nil {
+		return
+	}
+	structProcessors = append(structProcessors, p)
 }
 
 type TextArea interface {
@@ -52,12 +61,21 @@ func Load(path string) (areas []TextArea, err error) {
 			continue
 		}
 
-		structDecl, ok := typeSpec.Type.(*ast.StructType)
+		structType, ok := typeSpec.Type.(*ast.StructType)
 		if !ok {
 			continue
 		}
 
-		for _, field := range structDecl.Fields.List {
+		for _, p := range structProcessors {
+			if genDecl.Doc != nil {
+				var nArea = p(structType, genDecl.Doc.List)
+				if nArea != nil {
+					areas = append(areas, nArea)
+				}
+			}
+		}
+
+		for _, field := range structType.Fields.List {
 			var comments = make([]*ast.Comment, 0, 2)
 
 			if field.Doc != nil {
