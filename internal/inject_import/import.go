@@ -78,7 +78,6 @@ func findImportString(comment string) string {
 
 type TextArea struct {
 	Start        int
-	End          int
 	InjectImport []string
 }
 
