@@ -66,15 +66,6 @@ func Load(path string) (areas []TextArea, err error) {
 			continue
 		}
 
-		for _, p := range structProcessors {
-			if genDecl.Doc != nil {
-				var nArea = p(structType, genDecl.Doc.List)
-				if nArea != nil {
-					areas = append(areas, nArea)
-				}
-			}
-		}
-
 		for _, field := range structType.Fields.List {
 			var comments = make([]*ast.Comment, 0, 2)
 
@@ -88,6 +79,15 @@ func Load(path string) (areas []TextArea, err error) {
 
 			for _, p := range fieldProcessors {
 				var nArea = p(field, comments)
+				if nArea != nil {
+					areas = append(areas, nArea)
+				}
+			}
+		}
+
+		for _, p := range structProcessors {
+			if genDecl.Doc != nil {
+				var nArea = p(structType, genDecl.Doc.List)
 				if nArea != nil {
 					areas = append(areas, nArea)
 				}
