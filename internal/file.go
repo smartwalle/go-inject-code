@@ -44,57 +44,65 @@ func Load(path string) (areas []TextArea, err error) {
 	}
 
 	for _, decl := range file.Decls {
-		genDecl, ok := decl.(*ast.GenDecl)
-		if !ok {
+		var genDecl, _ = decl.(*ast.GenDecl)
+		if genDecl == nil {
 			continue
 		}
 
-		var typeSpec *ast.TypeSpec
 		for _, spec := range genDecl.Specs {
-			if ts, ok := spec.(*ast.TypeSpec); ok {
-				typeSpec = ts
-				break
+			var nAreas []TextArea
+			switch rSpec := spec.(type) {
+			case *ast.ImportSpec:
+			case *ast.TypeSpec:
+				nAreas = parseType(genDecl, rSpec)
 			}
-		}
-
-		if typeSpec == nil {
-			continue
-		}
-
-		structType, ok := typeSpec.Type.(*ast.StructType)
-		if !ok {
-			continue
-		}
-
-		for _, field := range structType.Fields.List {
-			var comments = make([]*ast.Comment, 0, 2)
-
-			if field.Doc != nil {
-				comments = append(comments, field.Doc.List...)
-			}
-
-			if field.Comment != nil {
-				comments = append(comments, field.Comment.List...)
-			}
-
-			for _, p := range fieldProcessors {
-				var nArea = p(field, comments)
-				if nArea != nil {
-					areas = append(areas, nArea)
-				}
-			}
-		}
-
-		for _, p := range structProcessors {
-			if genDecl.Doc != nil {
-				var nArea = p(structType, genDecl.Doc.List)
-				if nArea != nil {
-					areas = append(areas, nArea)
-				}
-			}
+			areas = append(areas, nAreas...)
 		}
 	}
 	return
+}
+
+func parseType(genDecl *ast.GenDecl, rSpec *ast.TypeSpec) []TextArea {
+	switch rType := rSpec.Type.(type) {
+	case *ast.StructType:
+		return parseStruct(genDecl, rType)
+	}
+	return nil
+}
+
+func parseStruct(genDecl *ast.GenDecl, structType *ast.StructType) (areas []TextArea) {
+	if structType == nil {
+		return nil
+	}
+
+	for _, field := range structType.Fields.List {
+		var comments = make([]*ast.Comment, 0, 2)
+
+		if field.Doc != nil {
+			comments = append(comments, field.Doc.List...)
+		}
+
+		if field.Comment != nil {
+			comments = append(comments, field.Comment.List...)
+		}
+
+		for _, p := range fieldProcessors {
+			var nArea = p(field, comments)
+			if nArea != nil {
+				areas = append(areas, nArea)
+			}
+		}
+	}
+
+	for _, p := range structProcessors {
+		if genDecl.Doc != nil {
+			var nArea = p(structType, genDecl.Doc.List)
+			if nArea != nil {
+				areas = append(areas, nArea)
+			}
+		}
+	}
+	return areas
 }
 
 func Write(path string, areas []TextArea) (err error) {
