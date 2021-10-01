@@ -23,8 +23,8 @@ func main() {
 		return
 	}
 
-	internal.RegisterFieldProcessor(inject_tag.NewProcessField(strings.Split(tag, "|")))
 	internal.RegisterStructProcessor(inject_field.NewProcessStruct())
+	internal.RegisterFieldProcessor(inject_tag.NewProcessField(strings.Split(tag, "|")))
 
 	filepath.Walk(input, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {

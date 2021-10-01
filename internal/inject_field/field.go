@@ -8,11 +8,8 @@ import (
 )
 
 var (
-	//fieldComment = regexp.MustCompile(`^//.*?@GoField\((.*)\).*?`)
-	fieldComment = regexp.MustCompile(`^//.*?@GoField\((\S+)\s+(\S+)\).*?`)
+	fieldComment = regexp.MustCompile(`^//.*?@GoField\(\s*(\S+)\s+(\S+)\s*\).*?`)
 )
-
-var rComment = regexp.MustCompile(`//\s*@inject_field:\s+(\S+)\s+(\S+)$`)
 
 func NewProcessStruct() internal.StructProcessor {
 	return func(s *ast.StructType, comments []*ast.Comment) internal.TextArea {
@@ -76,6 +73,7 @@ func (this *TextArea) Inject(content []byte) []byte {
 
 	var text = make([]byte, 0, 1024)
 	var buf = bytes.NewBuffer(text)
+	buf.WriteString("\t// inject fields \n")
 	for _, field := range this.InjectField {
 		buf.WriteByte('\t')
 		buf.WriteString(field.Name)
