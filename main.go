@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/smartwalle/go-inject-code/internal"
 	"github.com/smartwalle/go-inject-code/internal/inject_field"
+	"github.com/smartwalle/go-inject-code/internal/inject_import"
 	"github.com/smartwalle/go-inject-code/internal/inject_tag"
 	"io/fs"
 	"log"
@@ -25,6 +26,7 @@ func main() {
 
 	internal.RegisterFieldProcessor(inject_tag.NewProcessField(strings.Split(tag, "|")))
 	internal.RegisterStructProcessor(inject_field.NewProcessStruct())
+	internal.RegisterImportProcessor(inject_import.NewProcessImport())
 
 	filepath.Walk(input, func(path string, info fs.FileInfo, err error) error {
 		if err != nil {

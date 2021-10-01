@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	tagComment = regexp.MustCompile(`^//.*?@GoTag\((.*)\).*?`)
+	tagComment = regexp.MustCompile(`^//\s*@GoTag\((.*)\).*?`)
 	tagSplit   = regexp.MustCompile(`[\w_]+:"[^"]+"`)
 	tagInject  = regexp.MustCompile("`.+`$")
 )
@@ -65,7 +65,7 @@ func NewProcessField(genTags []string) internal.FieldProcessor {
 // findTagString 从字符串中提取出要注入的 tag 字符串内容。
 // 如：从 @GoTag(bson:"_id") 提取出 bson:"_id"。
 func findTagString(comment string) (tag string) {
-	match := tagComment.FindStringSubmatch(comment)
+	var match = tagComment.FindStringSubmatch(comment)
 	if len(match) == 2 {
 		tag = match[1]
 	}

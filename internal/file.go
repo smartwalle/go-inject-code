@@ -12,24 +12,24 @@ import (
 
 type FieldProcessor func(f *ast.Field, comments []*ast.Comment) TextArea
 type StructProcessor func(s *ast.StructType, comments []*ast.Comment) TextArea
+type ImportProcessor func(f *ast.File) TextArea
 
 var (
-	fieldProcessors  = make([]FieldProcessor, 0, 1)
-	structProcessors = make([]StructProcessor, 0, 1)
+	fieldProcessor  FieldProcessor
+	structProcessor StructProcessor
+	importProcessor ImportProcessor
 )
 
 func RegisterFieldProcessor(p FieldProcessor) {
-	if p == nil {
-		return
-	}
-	fieldProcessors = append(fieldProcessors, p)
+	fieldProcessor = p
 }
 
 func RegisterStructProcessor(p StructProcessor) {
-	if p == nil {
-		return
-	}
-	structProcessors = append(structProcessors, p)
+	structProcessor = p
+}
+
+func RegisterImportProcessor(p ImportProcessor) {
+	importProcessor = p
 }
 
 type TextArea interface {
@@ -41,6 +41,13 @@ func Load(path string) (areas []TextArea, err error) {
 	file, err := parser.ParseFile(fileSet, path, nil, parser.ParseComments)
 	if err != nil {
 		return nil, err
+	}
+
+	if importProcessor != nil {
+		var nArea = importProcessor(file)
+		if nArea != nil {
+			areas = append(areas, nArea)
+		}
 	}
 
 	for _, decl := range file.Decls {
@@ -85,20 +92,18 @@ func parseStruct(genDecl *ast.GenDecl, structType *ast.StructType) (areas []Text
 			comments = append(comments, field.Comment.List...)
 		}
 
-		for _, p := range fieldProcessors {
-			var nArea = p(field, comments)
+		if fieldProcessor != nil {
+			var nArea = fieldProcessor(field, comments)
 			if nArea != nil {
 				areas = append(areas, nArea)
 			}
 		}
 	}
 
-	for _, p := range structProcessors {
-		if genDecl.Doc != nil {
-			var nArea = p(structType, genDecl.Doc.List)
-			if nArea != nil {
-				areas = append(areas, nArea)
-			}
+	if structProcessor != nil && genDecl.Doc != nil {
+		var nArea = structProcessor(structType, genDecl.Doc.List)
+		if nArea != nil {
+			areas = append(areas, nArea)
 		}
 	}
 	return areas
