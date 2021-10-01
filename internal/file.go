@@ -52,7 +52,6 @@ func Load(path string) (areas []TextArea, err error) {
 		for _, spec := range genDecl.Specs {
 			var nAreas []TextArea
 			switch rSpec := spec.(type) {
-			case *ast.ImportSpec:
 			case *ast.TypeSpec:
 				nAreas = parseType(genDecl, rSpec)
 			}
