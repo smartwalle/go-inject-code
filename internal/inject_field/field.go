@@ -11,9 +11,12 @@ var (
 	fieldComment = regexp.MustCompile(`^//.*?@GoField\(\s*(\S+)\s+(\S+)\s*\).*?`)
 )
 
+// NewProcessStruct 生成字段信息
 func NewProcessStruct() internal.StructProcessor {
 	return func(s *ast.StructType, comments []*ast.Comment) internal.TextArea {
-		var exists = make(map[string]struct{})
+		var exists = make(map[string]struct{}) // 用于记录结构体已有的字段，避免重复添加
+
+		// 记录结构体已有字段
 		for _, field := range s.Fields.List {
 			if len(field.Names) > 0 {
 				exists[field.Names[0].Name] = struct{}{}
@@ -21,17 +24,21 @@ func NewProcessStruct() internal.StructProcessor {
 		}
 
 		var fields = make([]*Field, 0, len(comments))
+		// 从注释中提取要添加的字段信息
 		for _, comment := range comments {
 			var field = findFieldString(comment.Text)
 			if field == nil {
 				continue
 			}
 
+			// 检测是否已经存在
 			if _, ok := exists[field.Name]; ok {
 				continue
 			}
 
 			exists[field.Name] = struct{}{}
+
+			// 记录要添加的字段信息
 			fields = append(fields, field)
 		}
 
@@ -50,7 +57,7 @@ func NewProcessStruct() internal.StructProcessor {
 // findFieldString 从字符串中提取出要注入的字段内容。
 // 如：从 @GoField(Age int) 提取出 Age int。
 func findFieldString(comment string) (field *Field) {
-	match := fieldComment.FindStringSubmatch(comment)
+	var match = fieldComment.FindStringSubmatch(comment)
 	if len(match) == 3 {
 		field = &Field{}
 		field.Name = match[1]

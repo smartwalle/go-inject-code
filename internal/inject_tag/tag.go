@@ -15,9 +15,14 @@ var (
 	tagInject  = regexp.MustCompile("`.+`$")
 )
 
+// NewProcessField 生成字段的 tag 信息，包含两个功能：
+// 1、根据字段的注释 @GoTag() 生成 tag；
+// 2、根据参数 genTags 为字段生成 tag；
+// 生成的 tag 不会覆盖原有的 tag，会追加在原有 tag 的后面，如果 tag 已经存在，则不会重复生成。
 func NewProcessField(genTags []string) internal.FieldProcessor {
 	return func(field *ast.Field, comments []*ast.Comment) internal.TextArea {
 		var tags = make([]string, 0, len(comments)+len(genTags))
+		// 从注释中提取要添加的 tag 信息
 		for _, comment := range comments {
 			var tag = findTagString(comment.Text)
 			if tag == "" {
@@ -28,6 +33,7 @@ func NewProcessField(genTags []string) internal.FieldProcessor {
 
 		if len(field.Names) > 0 {
 			if field.Names[0].IsExported() {
+				// 如果字段为可导出的（外部可访问），则为其自动生成指定的 tag 信息
 				var name = internal.SnakeCase(field.Names[0].Name)
 				for _, tag := range genTags {
 					tags = append(tags, fmt.Sprintf("%s:\"%s\"", tag, name))
@@ -39,6 +45,7 @@ func NewProcessField(genTags []string) internal.FieldProcessor {
 			return nil
 		}
 
+		// 获取字段原有的 tag 信息
 		var currentTag string
 		if field.Tag != nil && len(field.Tag.Value) > 0 {
 			currentTag = field.Tag.Value
@@ -78,6 +85,7 @@ func (this *TextArea) Inject(content []byte) []byte {
 		return content
 	}
 
+	// 将字段原有的 tag 和要添加的 tag 进行合并
 	var currentTags = parseTags(this.CurrentTag)
 	var nTags = currentTags.Merge(injectTags)
 
@@ -85,12 +93,14 @@ func (this *TextArea) Inject(content []byte) []byte {
 	copy(text, content[this.Start-1:this.End-1])
 
 	if this.CurrentTag == "" {
+		// 如果字段原来没有任何 tag，则生成完整的 tag 信息
 		var buf = bytes.NewBuffer(text)
 		buf.WriteString(" `")
 		buf.WriteString(nTags.String())
 		buf.WriteString("`")
 		text = buf.Bytes()
 	} else {
+		// 如果字段原来有 tag，则替换 tag 内容
 		text = tagInject.ReplaceAll(text, []byte(fmt.Sprintf("`%s`", nTags.String())))
 	}
 
