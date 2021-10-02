@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	fieldComment = regexp.MustCompile(`^//\s*@GoField\(\s*(\S+)\s+(\S+)\s*\).*?`)
+	fieldComment = regexp.MustCompile(`^//\s*@GoField\(\s*(\S+)\s+(.*)\s*\).*?`)
 )
 
 // NewProcessStruct 生成字段信息
