@@ -15,7 +15,7 @@ import (
 func main() {
 	var input string
 	var tag string
-	flag.StringVar(&input, "input", "", "指定 go go 源代码文件所在目录，如：--input \"./\"")
+	flag.StringVar(&input, "input", "", "指定 go 源代码文件所在目录，如：--input \"./\"")
 	flag.StringVar(&tag, "tag", "", "自动生成 tag, 多个 tag 使用 '|' 进行分割，如： --tag \"sql|bson\"")
 	flag.Parse()
 
