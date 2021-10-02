@@ -2,6 +2,7 @@ package inject_import
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/smartwalle/go-inject-code/internal"
 	"go/ast"
 	"regexp"
@@ -18,7 +19,11 @@ func NewProcessImport() internal.ImportProcessor {
 
 		var start = 0 // 用于记录包导入的位置
 		for _, im := range f.Imports {
-			exists[im.Path.Value] = struct{}{}
+			if im.Name != nil {
+				exists[im.Name.Name+" "+im.Path.Value] = struct{}{}
+			} else {
+				exists[im.Path.Value] = struct{}{}
+			}
 
 			start = int(im.End()) + 1 // 如果原来有导入包，则追加在其后面
 		}
@@ -41,6 +46,8 @@ func NewProcessImport() internal.ImportProcessor {
 				imports = parseImportString(exists, comment.Text, imports)
 			}
 		}
+
+		fmt.Println(imports)
 
 		var nArea = &TextArea{}
 		nArea.Start = start
