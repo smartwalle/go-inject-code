@@ -2,7 +2,6 @@ package inject_import
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/smartwalle/go-inject-code/internal"
 	"go/ast"
 	"regexp"
@@ -47,8 +46,6 @@ func NewProcessImport() internal.ImportProcessor {
 				imports = parseImportString(exists, comment.Text, imports)
 			}
 		}
-
-		fmt.Println(imports)
 
 		var nArea = &TextArea{}
 		nArea.Start = start

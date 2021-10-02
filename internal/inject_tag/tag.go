@@ -53,8 +53,8 @@ func NewProcessField(genTags []string) internal.FieldProcessor {
 		}
 
 		var nArea = &TextArea{
-			Start:      int(field.Pos()),
-			End:        int(field.End()),
+			Start:      int(field.Pos()) - 1,
+			End:        int(field.End()) - 1,
 			CurrentTag: currentTag,
 			InjectTag:  strings.Join(tags, " "),
 		}
@@ -90,7 +90,7 @@ func (this *TextArea) Inject(content []byte) []byte {
 	var nTags = currentTags.Merge(injectTags)
 
 	var text = make([]byte, this.End-this.Start)
-	copy(text, content[this.Start-1:this.End-1])
+	copy(text, content[this.Start:this.End])
 
 	if this.CurrentTag == "" {
 		// 如果字段原来没有任何 tag，则生成完整的 tag 信息
@@ -105,9 +105,9 @@ func (this *TextArea) Inject(content []byte) []byte {
 	}
 
 	var injected = make([]byte, 0, len(content)+len(text))
-	injected = append(injected, content[:this.Start-1]...)
+	injected = append(injected, content[:this.Start]...)
 	injected = append(injected, text...)
-	injected = append(injected, content[this.End-1:]...)
+	injected = append(injected, content[this.End:]...)
 	return injected
 }
 
