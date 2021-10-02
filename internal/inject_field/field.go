@@ -12,6 +12,7 @@ var (
 )
 
 // NewProcessStruct 生成字段信息
+// 根据注释 @GoField() 生成字段，如：从 @GoField(Age int) 提取出 Age int
 func NewProcessStruct() internal.StructProcessor {
 	return func(s *ast.StructType, comments []*ast.Comment) internal.TextArea {
 		var exists = make(map[string]struct{}) // 用于记录结构体已有的字段，避免重复添加
@@ -94,7 +95,6 @@ func (this *TextArea) Inject(content []byte) []byte {
 	injected = append(injected, content[:this.Start]...)
 	injected = append(injected, text...)
 	injected = append(injected, content[this.End:]...)
-
 	return injected
 }
 

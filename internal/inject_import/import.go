@@ -13,6 +13,7 @@ var (
 )
 
 // NewProcessImport 生成包导入信息
+// 根据注释 @GoImport() 生成 import，如：从 @GoImport("time") 提取出 "time"
 func NewProcessImport() internal.ImportProcessor {
 	return func(f *ast.File) internal.TextArea {
 		var exists = make(map[string]struct{}) // 用于记录已导入的包，避免重复导入
