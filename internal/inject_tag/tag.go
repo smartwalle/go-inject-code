@@ -60,8 +60,7 @@ func NewProcessField(genTags []string) internal.FieldProcessor {
 		// 获取字段原有的 tag 信息
 		var currentTag string
 		if field.Tag != nil && len(field.Tag.Value) > 0 {
-			currentTag = field.Tag.Value
-			currentTag = field.Tag.Value[1 : len(currentTag)-1]
+			currentTag = field.Tag.Value[1 : len(field.Tag.Value)-1]
 		}
 
 		var nArea = &TextArea{
