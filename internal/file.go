@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-type FieldProcessor func(f *ast.Field, comments []*ast.Comment) TextArea
+type FieldProcessor func(f *ast.Field) TextArea
 type StructProcessor func(s *ast.StructType, comments []*ast.Comment) TextArea
 type ImportProcessor func(f *ast.File) TextArea
 
@@ -82,18 +82,8 @@ func parseStruct(genDecl *ast.GenDecl, structType *ast.StructType) (areas []Text
 	}
 
 	for _, field := range structType.Fields.List {
-		var comments = make([]*ast.Comment, 0, 2)
-
-		if field.Doc != nil {
-			comments = append(comments, field.Doc.List...)
-		}
-
-		if field.Comment != nil {
-			comments = append(comments, field.Comment.List...)
-		}
-
 		if fieldProcessor != nil {
-			var nArea = fieldProcessor(field, comments)
+			var nArea = fieldProcessor(field)
 			if nArea != nil {
 				areas = append(areas, nArea)
 			}

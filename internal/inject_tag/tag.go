@@ -20,15 +20,27 @@ var (
 // 2、根据参数 genTags 为字段生成 tag；
 // 生成的 tag 不会覆盖原有的 tag，会追加在原有 tag 的后面，如果 tag 已经存在，则不会重复生成。
 func NewProcessField(genTags []string) internal.FieldProcessor {
-	return func(field *ast.Field, comments []*ast.Comment) internal.TextArea {
-		var tags = make([]string, 0, len(comments)+len(genTags))
+	return func(field *ast.Field) internal.TextArea {
+		var tags = make([]string, 0, 2+len(genTags))
+
 		// 从注释中提取要添加的 tag 信息
-		for _, comment := range comments {
-			var tag = findTagString(comment.Text)
-			if tag == "" {
-				continue
+		if field.Doc != nil {
+			for _, comment := range field.Doc.List {
+				var tag = findTagString(comment.Text)
+				if tag == "" {
+					continue
+				}
+				tags = append(tags, tag)
 			}
-			tags = append(tags, tag)
+		}
+		if field.Comment != nil {
+			for _, comment := range field.Comment.List {
+				var tag = findTagString(comment.Text)
+				if tag == "" {
+					continue
+				}
+				tags = append(tags, tag)
+			}
 		}
 
 		if len(field.Names) > 0 {
