@@ -22,6 +22,8 @@ var (
 // 3、根据参数 genTags 为字段生成 tag；
 // 生成的 tag 不会覆盖原有的 tag，会追加在原有 tag 的后面，如果 tag 已经存在，则不会重复生成。
 func NewProcessField(s string) internal.FieldProcessor {
+	s = strings.TrimSpace(s)
+
 	var nTags []string
 	if s != "" {
 		nTags = strings.Split(s, "|")
