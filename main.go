@@ -57,9 +57,9 @@ func main() {
 	// 处理文件
 	if file != "" {
 		var files = strings.Split(file, "|")
-		for _, f := range files {
-			if strings.HasSuffix(strings.ToLower(f), ".go") {
-				parse(f)
+		for _, path := range files {
+			if strings.HasSuffix(strings.ToLower(path), ".go") {
+				parse(path)
 			}
 		}
 	}
