@@ -21,20 +21,24 @@ var (
 // 2、根据字段的注释 @GoReTag() 替换 tag，如：从 @GoReTag(bson:"_id") 提取出 bson:"_id"，如果该字段有 bson tag，则替换该 bson tag 的内容为 _id，如果该字段没有 bson tag，则会添加 bson:"_id"；
 // 3、根据参数 genTags 为字段生成 tag；
 // 生成的 tag 不会覆盖原有的 tag，会追加在原有 tag 的后面，如果 tag 已经存在，则不会重复生成。
-func NewProcessField(genTags []string) internal.FieldProcessor {
+func NewProcessField(s string) internal.FieldProcessor {
+	var nTags []string
+	if s != "" {
+		nTags = strings.Split(s, "|")
+	}
 	return func(field *ast.Field) internal.TextArea {
-		var tags = make([]string, 0, 2+len(genTags))
+		var iTags = make([]string, 0, 2+len(nTags))
 		var rTags = make([]string, 0, 2)
 
 		// 从注释中提取要添加的 tag 信息
 		if field.Doc != nil {
 			for _, comment := range field.Doc.List {
-				tags, rTags = SplitTag(comment.Text, tags, rTags)
+				iTags, rTags = SplitTag(comment.Text, iTags, rTags)
 			}
 		}
 		if field.Comment != nil {
 			for _, comment := range field.Comment.List {
-				tags, rTags = SplitTag(comment.Text, tags, rTags)
+				iTags, rTags = SplitTag(comment.Text, iTags, rTags)
 			}
 		}
 
@@ -42,36 +46,36 @@ func NewProcessField(genTags []string) internal.FieldProcessor {
 			if field.Names[0].IsExported() {
 				// 如果字段为可导出的（外部可访问），则为其自动生成指定的 tag 信息
 				var name = internal.SnakeCase(field.Names[0].Name)
-				for _, tag := range genTags {
-					tags = append(tags, fmt.Sprintf("%s:\"%s\"", tag, name))
+				for _, tag := range nTags {
+					iTags = append(iTags, fmt.Sprintf("%s:\"%s\"", tag, name))
 				}
 			}
 		}
 
-		if len(tags) == 0 && len(rTags) == 0 {
+		if len(iTags) == 0 && len(rTags) == 0 {
 			return nil
 		}
 
 		// 获取字段原有的 tag 信息
-		var currentTag string
+		var mTag string
 		if field.Tag != nil && len(field.Tag.Value) > 0 {
-			currentTag = field.Tag.Value[1 : len(field.Tag.Value)-1]
+			mTag = field.Tag.Value[1 : len(field.Tag.Value)-1]
 		}
 
 		var nArea = &TextArea{
-			Start:      int(field.Pos()) - 1,
-			End:        int(field.End()) - 1,
-			CurrentTag: currentTag,
-			InjectTag:  strings.Join(tags, " "),
-			ReTag:      strings.Join(rTags, " "),
+			start: int(field.Pos()) - 1,
+			end:   int(field.End()) - 1,
+			mTag:  mTag,
+			iTag:  strings.Join(iTags, " "),
+			rTag:  strings.Join(rTags, " "),
 		}
 		return nArea
 	}
 }
 
-func SplitTag(text string, tags, rTags []string) ([]string, []string) {
+func SplitTag(text string, iTags, rTags []string) ([]string, []string) {
 	if text == "" {
-		return tags, rTags
+		return iTags, rTags
 	}
 	var ts = strings.Split(text, "@")
 
@@ -80,7 +84,7 @@ func SplitTag(text string, tags, rTags []string) ([]string, []string) {
 			s = "@" + s
 			var tag = FindTagString(s)
 			if tag != "" {
-				tags = append(tags, tag)
+				iTags = append(iTags, tag)
 			}
 
 			tag = FindReTagString(s)
@@ -89,7 +93,7 @@ func SplitTag(text string, tags, rTags []string) ([]string, []string) {
 			}
 		}
 	}
-	return tags, rTags
+	return iTags, rTags
 }
 
 // FindTagString 从字符串中提取出要注入的 tag 字符串内容。
@@ -113,28 +117,28 @@ func FindReTagString(comment string) (tag string) {
 }
 
 type TextArea struct {
-	Start      int
-	End        int
-	CurrentTag string
-	InjectTag  string
-	ReTag      string
+	start int
+	end   int
+	mTag  string // 原有 tag
+	iTag  string // 新增 tag，从 @GoTag() 提取和参数 --tag 生成
+	rTag  string // 替换 tag，从 @GoReTag() 提取
 }
 
 func (this *TextArea) Inject(content []byte) []byte {
-	var injectTags = parseTags(this.InjectTag)
-	var reTags = parseTags(this.ReTag)
-	if len(injectTags) == 0 && len(reTags) == 0 {
+	var iTags = parseTags(this.iTag)
+	var rTags = parseTags(this.rTag)
+	if len(iTags) == 0 && len(rTags) == 0 {
 		return content
 	}
 
 	// 将字段原有的 tag 和要添加的 tag 进行合并
-	var currentTags = parseTags(this.CurrentTag)
-	var nTags = currentTags.Merge(injectTags, reTags)
+	var mTags = parseTags(this.mTag)
+	var nTags = mTags.Merge(iTags, rTags)
 
-	var text = make([]byte, this.End-this.Start)
-	copy(text, content[this.Start:this.End])
+	var text = make([]byte, this.end-this.start)
+	copy(text, content[this.start:this.end])
 
-	if this.CurrentTag == "" {
+	if this.mTag == "" {
 		// 如果字段原来没有任何 tag，则生成完整的 tag 信息
 		var buf = bytes.NewBuffer(text)
 		buf.WriteString(" `")
@@ -147,9 +151,9 @@ func (this *TextArea) Inject(content []byte) []byte {
 	}
 
 	var injected = make([]byte, 0, len(content)+len(text))
-	injected = append(injected, content[:this.Start]...)
+	injected = append(injected, content[:this.start]...)
 	injected = append(injected, text...)
-	injected = append(injected, content[this.End:]...)
+	injected = append(injected, content[this.end:]...)
 	return injected
 }
 
