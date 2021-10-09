@@ -24,17 +24,17 @@ var (
 func NewProcessField(genTags []string) internal.FieldProcessor {
 	return func(field *ast.Field) internal.TextArea {
 		var tags = make([]string, 0, 2+len(genTags))
-		var reTags = make([]string, 0, 2)
+		var rTags = make([]string, 0, 2)
 
 		// 从注释中提取要添加的 tag 信息
 		if field.Doc != nil {
 			for _, comment := range field.Doc.List {
-				tags, reTags = SplitTag(comment.Text, tags, reTags)
+				tags, rTags = SplitTag(comment.Text, tags, rTags)
 			}
 		}
 		if field.Comment != nil {
 			for _, comment := range field.Comment.List {
-				tags, reTags = SplitTag(comment.Text, tags, reTags)
+				tags, rTags = SplitTag(comment.Text, tags, rTags)
 			}
 		}
 
@@ -48,7 +48,7 @@ func NewProcessField(genTags []string) internal.FieldProcessor {
 			}
 		}
 
-		if len(tags) == 0 && len(reTags) == 0 {
+		if len(tags) == 0 && len(rTags) == 0 {
 			return nil
 		}
 
@@ -63,15 +63,15 @@ func NewProcessField(genTags []string) internal.FieldProcessor {
 			End:        int(field.End()) - 1,
 			CurrentTag: currentTag,
 			InjectTag:  strings.Join(tags, " "),
-			ReTag:      strings.Join(reTags, " "),
+			ReTag:      strings.Join(rTags, " "),
 		}
 		return nArea
 	}
 }
 
-func SplitTag(text string, tags, reTags []string) ([]string, []string) {
+func SplitTag(text string, tags, rTags []string) ([]string, []string) {
 	if text == "" {
-		return tags, reTags
+		return tags, rTags
 	}
 	var ts = strings.Split(text, "@")
 
@@ -85,11 +85,11 @@ func SplitTag(text string, tags, reTags []string) ([]string, []string) {
 
 			tag = FindReTagString(s)
 			if tag != "" {
-				reTags = append(reTags, tag)
+				rTags = append(rTags, tag)
 			}
 		}
 	}
-	return tags, reTags
+	return tags, rTags
 }
 
 // FindTagString 从字符串中提取出要注入的 tag 字符串内容。
@@ -168,26 +168,24 @@ func (this Tags) String() string {
 	return strings.Join(tags, " ")
 }
 
-func (this Tags) Merge(tags, reTags Tags) Tags {
+func (this Tags) Merge(tags, rTags Tags) Tags {
 	var nTags = make([]Tag, 0, len(this)+len(tags))
 
 	// 方便后续查找，转换成 map
 	var replace = make(map[string]Tag)
-	for _, t := range reTags {
+	for _, t := range rTags {
 		replace[t.key] = t
 	}
 
 	var exists = make(map[string]struct{})
 	for _, tag := range this {
 		exists[tag.key] = struct{}{}
-
 		if rTag, ok := replace[tag.key]; ok {
 			// 如果在需要替换的列表中，则使用替换列表中的内容
 			nTags = append(nTags, rTag)
 		} else {
 			nTags = append(nTags, tag)
 		}
-
 		delete(replace, tag.key)
 	}
 
@@ -199,6 +197,7 @@ func (this Tags) Merge(tags, reTags Tags) Tags {
 			} else {
 				nTags = append(nTags, tag)
 			}
+			delete(replace, tag.key)
 		}
 	}
 
