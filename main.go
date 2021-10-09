@@ -24,7 +24,11 @@ func main() {
 		return
 	}
 
-	internal.RegisterFieldProcessor(inject_tag.NewProcessField(strings.Split(tag, "|")))
+	var nTags []string
+	if tag != "" {
+		nTags = strings.Split(tag, "|")
+	}
+	internal.RegisterFieldProcessor(inject_tag.NewProcessField(nTags))
 	internal.RegisterStructProcessor(inject_field.NewProcessStruct())
 	internal.RegisterImportProcessor(inject_import.NewProcessImport())
 

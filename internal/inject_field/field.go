@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	fieldComment = regexp.MustCompile(`^//\s*@GoField\(\s*(\S+)\s+(.*)\s*\).*?`)
+	fieldComment = regexp.MustCompile(`[\s\S^@]*@GoField\(\s*(\S+)\s+(.*)\s*\).*?`)
 )
 
 // NewProcessStruct 生成字段信息
@@ -27,7 +27,7 @@ func NewProcessStruct() internal.StructProcessor {
 		var fields = make([]*Field, 0, len(comments))
 		// 从注释中提取要添加的字段信息
 		for _, comment := range comments {
-			var field = findFieldString(comment.Text)
+			var field = FindFieldString(comment.Text)
 			if field == nil {
 				continue
 			}
@@ -55,9 +55,9 @@ func NewProcessStruct() internal.StructProcessor {
 	}
 }
 
-// findFieldString 从字符串中提取出要注入的字段内容。
+// FindFieldString 从字符串中提取出要注入的字段内容。
 // 如：从 @GoField(Age int) 提取出 Age int。
-func findFieldString(comment string) (field *Field) {
+func FindFieldString(comment string) (field *Field) {
 	var match = fieldComment.FindStringSubmatch(comment)
 	if len(match) == 3 {
 		field = &Field{}

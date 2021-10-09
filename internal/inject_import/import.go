@@ -55,7 +55,7 @@ func NewProcessImport() internal.ImportProcessor {
 }
 
 func parseImportString(exists map[string]struct{}, comment string, imports []string) []string {
-	var in = findImportString(comment)
+	var in = FindImportString(comment)
 	if in == "" {
 		return imports
 	}
@@ -71,9 +71,9 @@ func parseImportString(exists map[string]struct{}, comment string, imports []str
 	return imports
 }
 
-// findImportString 从字符串中提取出要导入的包内容。
+// FindImportString 从字符串中提取出要导入的包内容。
 // 如：从 @GoImport("time") 提取出 "time"。
-func findImportString(comment string) string {
+func FindImportString(comment string) string {
 	var match = importComment.FindStringSubmatch(comment)
 	if len(match) == 2 {
 		return match[1]

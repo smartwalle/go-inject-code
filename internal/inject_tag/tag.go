@@ -10,36 +10,31 @@ import (
 )
 
 var (
-	tagComment = regexp.MustCompile(`^//\s*@GoTag\((.*)\).*?`)
-	tagSplit   = regexp.MustCompile(`[\w_]+:"[^"]+"`)
-	tagInject  = regexp.MustCompile("`.+`$")
+	tagComment   = regexp.MustCompile(`[\s\S^@]*@GoTag\(([^\)]+)\).*?`)
+	reTagComment = regexp.MustCompile(`[\s\S^@]*@GoReTag\(([^\)]+)\).*?`)
+	tagSplit     = regexp.MustCompile(`[\w_]+:"[^"]+"`)
+	tagInject    = regexp.MustCompile("`.+`$")
 )
 
 // NewProcessField 生成字段的 tag 信息，包含两个功能：
 // 1、根据字段的注释 @GoTag() 生成 tag，如：从 @GoTag(bson:"_id") 提取出 bson:"_id"；
-// 2、根据参数 genTags 为字段生成 tag；
+// 2、根据字段的注释 @GoReTag() 替换 tag，如：从 @GoReTag(bson:"_id") 提取出 bson:"_id"，如果该字段有 bson tag，则替换该 bson tag 的内容为 _id，如果该字段没有 bson tag，则会添加 bson:"_id"；
+// 3、根据参数 genTags 为字段生成 tag；
 // 生成的 tag 不会覆盖原有的 tag，会追加在原有 tag 的后面，如果 tag 已经存在，则不会重复生成。
 func NewProcessField(genTags []string) internal.FieldProcessor {
 	return func(field *ast.Field) internal.TextArea {
 		var tags = make([]string, 0, 2+len(genTags))
+		var reTags = make([]string, 0, 2)
 
 		// 从注释中提取要添加的 tag 信息
 		if field.Doc != nil {
 			for _, comment := range field.Doc.List {
-				var tag = findTagString(comment.Text)
-				if tag == "" {
-					continue
-				}
-				tags = append(tags, tag)
+				tags, reTags = SplitTag(comment.Text, tags, reTags)
 			}
 		}
 		if field.Comment != nil {
 			for _, comment := range field.Comment.List {
-				var tag = findTagString(comment.Text)
-				if tag == "" {
-					continue
-				}
-				tags = append(tags, tag)
+				tags, reTags = SplitTag(comment.Text, tags, reTags)
 			}
 		}
 
@@ -53,7 +48,7 @@ func NewProcessField(genTags []string) internal.FieldProcessor {
 			}
 		}
 
-		if len(tags) == 0 {
+		if len(tags) == 0 && len(reTags) == 0 {
 			return nil
 		}
 
@@ -68,15 +63,49 @@ func NewProcessField(genTags []string) internal.FieldProcessor {
 			End:        int(field.End()) - 1,
 			CurrentTag: currentTag,
 			InjectTag:  strings.Join(tags, " "),
+			ReTag:      strings.Join(reTags, " "),
 		}
 		return nArea
 	}
 }
 
-// findTagString 从字符串中提取出要注入的 tag 字符串内容。
+func SplitTag(text string, tags, reTags []string) ([]string, []string) {
+	if text == "" {
+		return tags, reTags
+	}
+	var ts = strings.Split(text, "@")
+
+	for _, s := range ts {
+		if s != "" {
+			s = "@" + s
+			var tag = FindTagString(s)
+			if tag != "" {
+				tags = append(tags, tag)
+			}
+
+			tag = FindReTagString(s)
+			if tag != "" {
+				reTags = append(reTags, tag)
+			}
+		}
+	}
+	return tags, reTags
+}
+
+// FindTagString 从字符串中提取出要注入的 tag 字符串内容。
 // 如：从 @GoTag(bson:"_id") 提取出 bson:"_id"。
-func findTagString(comment string) (tag string) {
+func FindTagString(comment string) (tag string) {
 	var match = tagComment.FindStringSubmatch(comment)
+	if len(match) == 2 {
+		tag = match[1]
+	}
+	return
+}
+
+// FindReTagString 从字符串中提取出要替换的 tag 字符串内容。
+// 如：从 @GoReTag(bson:"_id") 提取出 bson:"_id"。
+func FindReTagString(comment string) (tag string) {
+	var match = reTagComment.FindStringSubmatch(comment)
 	if len(match) == 2 {
 		tag = match[1]
 	}
@@ -88,17 +117,19 @@ type TextArea struct {
 	End        int
 	CurrentTag string
 	InjectTag  string
+	ReTag      string
 }
 
 func (this *TextArea) Inject(content []byte) []byte {
 	var injectTags = parseTags(this.InjectTag)
-	if len(injectTags) == 0 {
+	var reTags = parseTags(this.ReTag)
+	if len(injectTags) == 0 && len(reTags) == 0 {
 		return content
 	}
 
 	// 将字段原有的 tag 和要添加的 tag 进行合并
 	var currentTags = parseTags(this.CurrentTag)
-	var nTags = currentTags.Merge(injectTags)
+	var nTags = currentTags.Merge(injectTags, reTags)
 
 	var text = make([]byte, this.End-this.Start)
 	copy(text, content[this.Start:this.End])
@@ -137,16 +168,41 @@ func (this Tags) String() string {
 	return strings.Join(tags, " ")
 }
 
-func (this Tags) Merge(tags Tags) Tags {
+func (this Tags) Merge(tags, reTags Tags) Tags {
 	var nTags = make([]Tag, 0, len(this)+len(tags))
+
+	// 方便后续查找，转换成 map
+	var replace = make(map[string]Tag)
+	for _, t := range reTags {
+		replace[t.key] = t
+	}
 
 	var exists = make(map[string]struct{})
 	for _, tag := range this {
 		exists[tag.key] = struct{}{}
-		nTags = append(nTags, tag)
+
+		if rTag, ok := replace[tag.key]; ok {
+			// 如果在需要替换的列表中，则使用替换列表中的内容
+			nTags = append(nTags, rTag)
+		} else {
+			nTags = append(nTags, tag)
+		}
+
+		delete(replace, tag.key)
 	}
 
 	for _, tag := range tags {
+		if _, ok := exists[tag.key]; ok == false {
+			exists[tag.key] = struct{}{}
+			if rTag, ok := replace[tag.key]; ok {
+				nTags = append(nTags, rTag)
+			} else {
+				nTags = append(nTags, tag)
+			}
+		}
+	}
+
+	for _, tag := range replace {
 		if _, ok := exists[tag.key]; ok == false {
 			exists[tag.key] = struct{}{}
 			nTags = append(nTags, tag)
