@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	importComment = regexp.MustCompile(`^//\s*@GoImport\((.*)\).*?`)
+	importComment = regexp.MustCompile(`[\s\S^@]*@GoImport\((.*)\).*?`)
 )
 
 // NewProcessImport 生成包导入信息
