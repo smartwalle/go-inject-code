@@ -10,10 +10,10 @@ import (
 )
 
 var (
-	tagComment   = regexp.MustCompile(`[\s\S^@]*@GoTag\(([^\)]+)\).*?`)
-	reTagComment = regexp.MustCompile(`[\s\S^@]*@GoReTag\(([^\)]+)\).*?`)
-	tagSplit     = regexp.MustCompile(`[\w_]+:"[^"]+"`)
-	tagInject    = regexp.MustCompile("`.+`$")
+	iTagComment = regexp.MustCompile(`[\s\S^@]*@GoTag\(([^\)]+)\).*?`)
+	rTagComment = regexp.MustCompile(`[\s\S^@]*@GoReTag\(([^\)]+)\).*?`)
+	tagSplit    = regexp.MustCompile(`[\w_]+:"[^"]+"`)
+	tagInject   = regexp.MustCompile("`.+`$")
 )
 
 // NewProcessField 生成字段的 tag 信息，包含两个功能：
@@ -33,12 +33,12 @@ func NewProcessField(s string) internal.FieldProcessor {
 		// 从注释中提取要添加的 tag 信息
 		if field.Doc != nil {
 			for _, comment := range field.Doc.List {
-				iTags, rTags = SplitTag(comment.Text, iTags, rTags)
+				iTags, rTags = ParseTag(comment.Text, iTags, rTags)
 			}
 		}
 		if field.Comment != nil {
 			for _, comment := range field.Comment.List {
-				iTags, rTags = SplitTag(comment.Text, iTags, rTags)
+				iTags, rTags = ParseTag(comment.Text, iTags, rTags)
 			}
 		}
 
@@ -73,7 +73,7 @@ func NewProcessField(s string) internal.FieldProcessor {
 	}
 }
 
-func SplitTag(text string, iTags, rTags []string) ([]string, []string) {
+func ParseTag(text string, iTags, rTags []string) ([]string, []string) {
 	if text == "" {
 		return iTags, rTags
 	}
@@ -98,8 +98,8 @@ func SplitTag(text string, iTags, rTags []string) ([]string, []string) {
 
 // FindTagString 从字符串中提取出要注入的 tag 字符串内容。
 // 如：从 @GoTag(bson:"_id") 提取出 bson:"_id"。
-func FindTagString(comment string) (tag string) {
-	var match = tagComment.FindStringSubmatch(comment)
+func FindTagString(s string) (tag string) {
+	var match = iTagComment.FindStringSubmatch(s)
 	if len(match) == 2 {
 		tag = match[1]
 	}
@@ -108,8 +108,8 @@ func FindTagString(comment string) (tag string) {
 
 // FindReTagString 从字符串中提取出要替换的 tag 字符串内容。
 // 如：从 @GoReTag(bson:"_id") 提取出 bson:"_id"。
-func FindReTagString(comment string) (tag string) {
-	var match = reTagComment.FindStringSubmatch(comment)
+func FindReTagString(s string) (tag string) {
+	var match = rTagComment.FindStringSubmatch(s)
 	if len(match) == 2 {
 		tag = match[1]
 	}
@@ -125,14 +125,14 @@ type TextArea struct {
 }
 
 func (this *TextArea) Inject(content []byte) []byte {
-	var iTags = parseTags(this.iTag)
-	var rTags = parseTags(this.rTag)
+	var iTags = NewTags(this.iTag)
+	var rTags = NewTags(this.rTag)
 	if len(iTags) == 0 && len(rTags) == 0 {
 		return content
 	}
 
 	// 将字段原有的 tag 和要添加的 tag 进行合并
-	var mTags = parseTags(this.mTag)
+	var mTags = NewTags(this.mTag)
 	var nTags = mTags.Merge(iTags, rTags)
 
 	var text = make([]byte, this.end-this.start)
@@ -214,8 +214,8 @@ func (this Tags) Merge(tags, rTags Tags) Tags {
 	return nTags
 }
 
-func parseTags(str string) Tags {
-	var tags = tagSplit.FindAllString(str, -1)
+func NewTags(s string) Tags {
+	var tags = tagSplit.FindAllString(s, -1)
 	var nTags = make([]Tag, 0, 1)
 	for _, tag := range tags {
 		var pos = strings.Index(tag, ":")

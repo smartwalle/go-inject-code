@@ -33,48 +33,48 @@ func NewProcessImport() internal.ImportProcessor {
 			start = int(f.Name.End())
 		}
 
-		var imports = make([]string, 0, 4) // 用于记录要添加的包信息
+		var nImports = make([]string, 0, 4) // 用于记录要添加的包信息
 
 		if f.Doc != nil {
 			for _, comment := range f.Doc.List {
-				imports = parseImportString(exists, comment.Text, imports)
+				nImports = ParseImport(exists, comment.Text, nImports)
 			}
 		}
 
 		for _, group := range f.Comments {
 			for _, comment := range group.List {
-				imports = parseImportString(exists, comment.Text, imports)
+				nImports = ParseImport(exists, comment.Text, nImports)
 			}
 		}
 
 		var nArea = &TextArea{}
-		nArea.Start = start
-		nArea.InjectImport = imports
+		nArea.start = start
+		nArea.nImport = nImports
 		return nArea
 	}
 }
 
-func parseImportString(exists map[string]struct{}, comment string, imports []string) []string {
-	var in = FindImportString(comment)
-	if in == "" {
-		return imports
+func ParseImport(exists map[string]struct{}, text string, nImports []string) []string {
+	var nImport = FindImportString(text)
+	if nImport == "" {
+		return nImports
 	}
 
-	if _, ok := exists[in]; ok {
-		return imports
+	if _, ok := exists[nImport]; ok {
+		return nImports
 	}
 
-	exists[in] = struct{}{}
+	exists[nImport] = struct{}{}
 
-	imports = append(imports, in)
+	nImports = append(nImports, nImport)
 
-	return imports
+	return nImports
 }
 
 // FindImportString 从字符串中提取出要导入的包内容。
 // 如：从 @GoImport("time") 提取出 "time"。
-func FindImportString(comment string) string {
-	var match = importComment.FindStringSubmatch(comment)
+func FindImportString(s string) string {
+	var match = importComment.FindStringSubmatch(s)
 	if len(match) == 2 {
 		return match[1]
 	}
@@ -82,12 +82,12 @@ func FindImportString(comment string) string {
 }
 
 type TextArea struct {
-	Start        int
-	InjectImport []string
+	start   int
+	nImport []string
 }
 
 func (this *TextArea) Inject(content []byte) []byte {
-	if len(this.InjectImport) == 0 {
+	if len(this.nImport) == 0 {
 		return content
 	}
 
@@ -95,17 +95,17 @@ func (this *TextArea) Inject(content []byte) []byte {
 	var buf = bytes.NewBuffer(text)
 	buf.WriteString("\n// inject import \n")
 	buf.WriteString("import (\n")
-	for _, im := range this.InjectImport {
+	for _, im := range this.nImport {
 		buf.WriteByte('\t')
 		buf.WriteString(im)
 		buf.WriteByte('\n')
 	}
-	buf.WriteString(")")
+	buf.WriteString(")\n")
 	text = buf.Bytes()
 
 	var injected = make([]byte, 0, len(content))
-	injected = append(injected, content[:this.Start]...)
+	injected = append(injected, content[:this.start]...)
 	injected = append(injected, text...)
-	injected = append(injected, content[this.Start:]...)
+	injected = append(injected, content[this.start:]...)
 	return injected
 }

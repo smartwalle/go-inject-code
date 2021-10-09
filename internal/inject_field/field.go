@@ -48,17 +48,17 @@ func NewProcessStruct() internal.StructProcessor {
 		}
 
 		var nArea = &TextArea{}
-		nArea.Start = int(s.Fields.Closing) - 1
-		nArea.End = int(s.Fields.Closing) - 1
-		nArea.InjectField = fields
+		nArea.start = int(s.Fields.Closing) - 1
+		nArea.end = int(s.Fields.Closing) - 1
+		nArea.fields = fields
 		return nArea
 	}
 }
 
 // FindFieldString 从字符串中提取出要注入的字段内容。
 // 如：从 @GoField(Age int) 提取出 Age int。
-func FindFieldString(comment string) (field *Field) {
-	var match = fieldComment.FindStringSubmatch(comment)
+func FindFieldString(s string) (field *Field) {
+	var match = fieldComment.FindStringSubmatch(s)
 	if len(match) == 3 {
 		field = &Field{}
 		field.Name = match[1]
@@ -69,20 +69,20 @@ func FindFieldString(comment string) (field *Field) {
 }
 
 type TextArea struct {
-	Start       int
-	End         int
-	InjectField []*Field
+	start  int
+	end    int
+	fields []*Field
 }
 
 func (this *TextArea) Inject(content []byte) []byte {
-	if len(this.InjectField) == 0 {
+	if len(this.fields) == 0 {
 		return content
 	}
 
 	var text = make([]byte, 0, 1024)
 	var buf = bytes.NewBuffer(text)
 	buf.WriteString("\t// inject fields \n")
-	for _, field := range this.InjectField {
+	for _, field := range this.fields {
 		buf.WriteByte('\t')
 		buf.WriteString(field.Name)
 		buf.WriteByte(' ')
@@ -92,9 +92,9 @@ func (this *TextArea) Inject(content []byte) []byte {
 	text = buf.Bytes()
 
 	var injected = make([]byte, 0, len(content))
-	injected = append(injected, content[:this.Start]...)
+	injected = append(injected, content[:this.start]...)
 	injected = append(injected, text...)
-	injected = append(injected, content[this.End:]...)
+	injected = append(injected, content[this.end:]...)
 	return injected
 }
 
