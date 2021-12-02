@@ -13,7 +13,7 @@ message User {
 }
 ```
 
-当使用 protoc 工具编译上述代码时，可得到以下类似 Golang 代码:
+当使用 protoc 工具编译上述代码后，可得到以下类似 Golang 代码:
 
 ```go
 type User struct {
