@@ -39,7 +39,7 @@ type User struct {
 }
 ```
 
-为 protoc 生成的 Golang 代码添加了 bson Tag。
+即为 protoc 生成的 Golang 代码添加了 bson Tag。
 
 ## 生成 Tag
 
