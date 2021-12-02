@@ -111,7 +111,7 @@ go install github.com/smartwalle/go-inject-code@latest
 
 ### 生成
 
-进入需要处理 Golang 代码所在目录，执行以下命令
+进入需要处理的 Golang 代码所在目录，执行以下命令
 ```shell
 go-inject-code --input "./"
 ```
