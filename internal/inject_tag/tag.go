@@ -17,9 +17,9 @@ var (
 )
 
 // NewProcessField 生成字段的 tag 信息，包含两个功能：
-// 1、根据字段的注释 @GoTag() 生成 tag，如：从 @GoTag(bson:"_id") 提取出 bson:"_id"；
-// 2、根据字段的注释 @GoReTag() 替换 tag，如：从 @GoReTag(bson:"_id") 提取出 bson:"_id"，如果该字段有 bson tag，则替换该 bson tag 的内容为 _id，如果该字段没有 bson tag，则会添加 bson:"_id"；
-// 3、根据参数 genTags 为字段生成 tag；
+// 1、根据字段的注释 @GoTag() 生成 tag，如：根据 @GoTag(bson:"_id") 生成 bson:"_id"；
+// 2、根据字段的注释 @GoReTag() 替换 tag，如：根据 @GoReTag(bson:"_id") 生成 bson:"_id"。如果该字段有名为 bson 的 tag，则替换该 bson tag 的内容为 _id，如果该字段没有 bson tag，则会添加 bson:"_id"；
+// 3、根据参数 tag 为字段生成 tag；
 // 生成的 tag 不会覆盖原有的 tag，会追加在原有 tag 的后面，如果 tag 已经存在，则不会重复生成。
 func NewProcessField(s string) internal.FieldProcessor {
 	s = strings.TrimSpace(s)

@@ -1,4 +1,4 @@
-package cmd
+package examples
 
 // 打开终端进入本文件所在目录，然后执行 go-inject-code --input "./"
 
