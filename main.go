@@ -26,7 +26,7 @@ func main() {
 	vFilename = strings.TrimSpace(vFilename)
 
 	if vFilepath == "" && vFilename == "" {
-		log.Fatal("需要指定 Go 源代码文件所在目录，如: --input=\"./\"")
+		log.Fatal("需要指定 Go 源代码文件所在目录，如: --filepath=\"./\"")
 		return
 	}
 
