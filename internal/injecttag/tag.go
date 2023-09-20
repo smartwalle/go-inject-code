@@ -1,4 +1,4 @@
-package inject_tag
+package injecttag
 
 import (
 	"bytes"
@@ -14,70 +14,86 @@ var (
 	rTagComment = regexp.MustCompile(`[\s\S^@]*@GoReTag\(([^\)]+)\).*?`)
 	tagSplit    = regexp.MustCompile(`[\w_]+:"[^"]+"`)
 	tagInject   = regexp.MustCompile("`.+`$")
+	matchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")
 )
 
-// NewTagGenerator 生成字段的 tag 信息，包含两个功能：
+// TagGenerator 生成字段的 tag 信息，包含两个功能：
 //
 // 1、根据字段的注释 @GoTag() 生成 tag，如：根据 @GoTag(bson:"_id") 生成 bson:"_id"；
 //
 // 2、根据字段的注释 @GoReTag() 替换 tag，如：根据 @GoReTag(bson:"_id") 生成 bson:"_id"。如果该字段有名为 bson 的 tag，则替换该 bson tag 的内容为 _id，如果该字段没有 bson tag，则会添加 bson:"_id"；
 //
 // 3、根据参数 tag 为字段生成 tag，生成的 tag 不会覆盖原有的 tag，会追加在原有 tag 的后面，如果 tag 已经存在，则不会重复生成。
-func NewTagGenerator(tag string) internal.TagGenerator {
-	tag = strings.TrimSpace(tag)
+type TagGenerator struct {
+	tags []string
+}
 
+func NewTagGenerator(tag string) *TagGenerator {
+	tag = strings.TrimSpace(tag)
 	var nTags []string
 	if tag != "" {
 		nTags = strings.Split(tag, "|")
 	}
-	return func(field *ast.Field) internal.TextArea {
-		var iTags = make([]string, 0, 2+len(nTags))
-		var rTags = make([]string, 0, 2)
-
-		// 从注释中提取要添加的 tag 信息
-		if field.Doc != nil {
-			for _, comment := range field.Doc.List {
-				iTags, rTags = ParseTag(comment.Text, iTags, rTags)
-			}
-		}
-		if field.Comment != nil {
-			for _, comment := range field.Comment.List {
-				iTags, rTags = ParseTag(comment.Text, iTags, rTags)
-			}
-		}
-
-		if len(field.Names) > 0 {
-			if field.Names[0].IsExported() {
-				// 如果字段为可导出的（外部可访问），则为其自动生成指定的 tag 信息
-				var name = internal.SnakeCase(field.Names[0].Name)
-				for _, tag := range nTags {
-					iTags = append(iTags, fmt.Sprintf("%s:\"%s\"", tag, name))
-				}
-			}
-		}
-
-		if len(iTags) == 0 && len(rTags) == 0 {
-			return nil
-		}
-
-		// 获取字段原有的 tag 信息
-		var mTag string
-		if field.Tag != nil && len(field.Tag.Value) > 0 {
-			mTag = field.Tag.Value[1 : len(field.Tag.Value)-1]
-		}
-
-		var nArea = &TextArea{
-			start: int(field.Pos()) - 1,
-			end:   int(field.End()) - 1,
-			mTag:  mTag,
-			iTag:  strings.Join(iTags, " "),
-			rTag:  strings.Join(rTags, " "),
-		}
-		return nArea
-	}
+	var p = &TagGenerator{}
+	p.tags = nTags
+	return p
 }
 
-func ParseTag(text string, iTags, rTags []string) ([]string, []string) {
+func (this *TagGenerator) File(file *ast.File) internal.TextArea {
+	return nil
+}
+
+func (this *TagGenerator) Struct(structType *ast.StructType, comments []*ast.Comment) internal.TextArea {
+	return nil
+}
+
+func (this *TagGenerator) Field(field *ast.Field) internal.TextArea {
+	var iTags = make([]string, 0, 2+len(this.tags))
+	var rTags = make([]string, 0, 2)
+
+	// 从注释中提取要添加的 tag 信息
+	if field.Doc != nil {
+		for _, comment := range field.Doc.List {
+			iTags, rTags = parseTag(comment.Text, iTags, rTags)
+		}
+	}
+	if field.Comment != nil {
+		for _, comment := range field.Comment.List {
+			iTags, rTags = parseTag(comment.Text, iTags, rTags)
+		}
+	}
+
+	if len(field.Names) > 0 {
+		if field.Names[0].IsExported() {
+			// 如果字段为可导出的（外部可访问），则为其自动生成指定的 tag 信息
+			var name = snakeCase(field.Names[0].Name)
+			for _, tag := range this.tags {
+				iTags = append(iTags, fmt.Sprintf("%s:\"%s\"", tag, name))
+			}
+		}
+	}
+
+	if len(iTags) == 0 && len(rTags) == 0 {
+		return nil
+	}
+
+	// 获取字段原有的 tag 信息
+	var mTag string
+	if field.Tag != nil && len(field.Tag.Value) > 0 {
+		mTag = field.Tag.Value[1 : len(field.Tag.Value)-1]
+	}
+
+	var nArea = &TextArea{
+		start: int(field.Pos()) - 1,
+		end:   int(field.End()) - 1,
+		mTag:  mTag,
+		iTag:  strings.Join(iTags, " "),
+		rTag:  strings.Join(rTags, " "),
+	}
+	return nArea
+}
+
+func parseTag(text string, iTags, rTags []string) ([]string, []string) {
 	if text == "" {
 		return iTags, rTags
 	}
@@ -86,12 +102,12 @@ func ParseTag(text string, iTags, rTags []string) ([]string, []string) {
 	for _, s := range ts {
 		if s != "" {
 			s = "@" + s
-			var tag = FindTagString(s)
+			var tag = findTagString(s)
 			if tag != "" {
 				iTags = append(iTags, tag)
 			}
 
-			tag = FindReTagString(s)
+			tag = findReTagString(s)
 			if tag != "" {
 				rTags = append(rTags, tag)
 			}
@@ -100,10 +116,15 @@ func ParseTag(text string, iTags, rTags []string) ([]string, []string) {
 	return iTags, rTags
 }
 
-// FindTagString 从字符串中提取出要注入的 tag 字符串内容。
+func snakeCase(str string) string {
+	snake := matchAllCap.ReplaceAllString(str, "${1}_${2}")
+	return strings.ToLower(snake)
+}
+
+// findTagString 从字符串中提取出要注入的 tag 字符串内容。
 //
 // 如：从 @GoTag(bson:"_id") 提取出 bson:"_id"。
-func FindTagString(s string) (tag string) {
+func findTagString(s string) (tag string) {
 	var match = iTagComment.FindStringSubmatch(s)
 	if len(match) == 2 {
 		tag = match[1]
@@ -111,10 +132,10 @@ func FindTagString(s string) (tag string) {
 	return
 }
 
-// FindReTagString 从字符串中提取出要替换的 tag 字符串内容。
+// findReTagString 从字符串中提取出要替换的 tag 字符串内容。
 //
 // 如：从 @GoReTag(bson:"_id") 提取出 bson:"_id"。
-func FindReTagString(s string) (tag string) {
+func findReTagString(s string) (tag string) {
 	var match = rTagComment.FindStringSubmatch(s)
 	if len(match) == 2 {
 		tag = match[1]
