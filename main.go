@@ -54,7 +54,9 @@ func main() {
 	if vFilename != "" {
 		var filenames = strings.Split(vFilename, "|")
 		for _, filename := range filenames {
-			process(filename)
+			if err := process(filename); err != nil {
+				return
+			}
 		}
 	}
 }
@@ -64,8 +66,7 @@ func process(filename string) (err error) {
 		return nil
 	}
 
-	err = internal.Process(filename)
-	if err != nil {
+	if err = internal.Process(filename); err != nil {
 		log.Fatal(err)
 		return err
 	}
