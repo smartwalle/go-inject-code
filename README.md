@@ -113,7 +113,7 @@ go install github.com/smartwalle/go-inject-code@latest
 
 进入需要处理的 Golang 代码所在目录，执行以下命令
 ```shell
-go-inject-code --input "./"
+go-inject-code --filepath "./"
 ```
 
 更多参数执行以下命令查看

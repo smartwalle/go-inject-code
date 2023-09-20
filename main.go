@@ -16,8 +16,8 @@ func main() {
 	var vFilepath string
 	var vFilename string
 	var vTag string
-	flag.StringVar(&vFilepath, "input", "", "指定 Go 源代码文件所在目录，如：--input=\"./\"")
-	flag.StringVar(&vFilename, "file", "", "指定 Go 源代码文件，多个文件使用 '|' 进行分割，如：--file=\"./test.go\"")
+	flag.StringVar(&vFilepath, "filepath", "", "指定 Go 源代码文件所在目录，如：--filepath=\"./\"")
+	flag.StringVar(&vFilename, "filename", "", "指定 Go 源代码文件，多个文件使用 '|' 进行分割，如：--filename=\"./test.go\"")
 	flag.StringVar(&vTag, "tag", "", "自动生成 tag, 多个 tag 使用 '|' 进行分割，如： --tag=\"sql|bson\"")
 	flag.Parse()
 

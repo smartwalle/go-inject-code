@@ -7,5 +7,5 @@ package examples
 // @GoField(Age int)
 // @GoField(CreatedAt *time.Time)
 type User struct {
-	Name string `json:"new_name" bson:"name"` // @GoReTag(bson:"name"  json:"new_name")
+	Name string `json:"name" bson:"name"` // @GoReTag(bson:"name"  json:"new_name")
 }
