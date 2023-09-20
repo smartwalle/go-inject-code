@@ -11,9 +11,10 @@ var (
 	fieldComment = regexp.MustCompile(`[\s\S^@]*@GoField\(\s*(\S+)\s+(.*)\s*\).*?`)
 )
 
-// NewProcessStruct 生成字段信息
+// NewFieldGenerator 生成字段信息
+//
 // 根据注释 @GoField() 生成字段，如：从 @GoField(Age int) 提取出 Age int
-func NewProcessStruct() internal.StructProcessor {
+func NewFieldGenerator() internal.FieldGenerator {
 	return func(s *ast.StructType, comments []*ast.Comment) internal.TextArea {
 		var exists = make(map[string]struct{}) // 用于记录结构体已有的字段，避免重复添加
 
@@ -56,6 +57,7 @@ func NewProcessStruct() internal.StructProcessor {
 }
 
 // FindFieldString 从字符串中提取出要注入的字段内容。
+//
 // 如：从 @GoField(Age int) 提取出 Age int。
 func FindFieldString(s string) (field *Field) {
 	var match = fieldComment.FindStringSubmatch(s)

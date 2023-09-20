@@ -11,9 +11,10 @@ var (
 	importComment = regexp.MustCompile(`[\s\S^@]*@GoImport\((.*)\).*?`)
 )
 
-// NewProcessImport 生成包导入信息
+// NewImportGenerator 生成包导入信息
+//
 // 根据注释 @GoImport() 生成 import，如：从 @GoImport("time") 提取出 "time"
-func NewProcessImport() internal.ImportProcessor {
+func NewImportGenerator() internal.ImportGenerator {
 	return func(f *ast.File) internal.TextArea {
 		var exists = make(map[string]struct{}) // 用于记录已导入的包，避免重复导入
 
@@ -72,6 +73,7 @@ func ParseImport(exists map[string]struct{}, text string, nImports []string) []s
 }
 
 // FindImportString 从字符串中提取出要导入的包内容。
+//
 // 如：从 @GoImport("time") 提取出 "time"。
 func FindImportString(s string) string {
 	var match = importComment.FindStringSubmatch(s)

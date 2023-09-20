@@ -4,63 +4,63 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"io/ioutil"
+	"io"
 	"os"
 	"regexp"
 	"strings"
 )
 
-type FieldProcessor func(f *ast.Field) TextArea
-type StructProcessor func(s *ast.StructType, comments []*ast.Comment) TextArea
-type ImportProcessor func(f *ast.File) TextArea
+type TagGenerator func(f *ast.Field) TextArea
+type FieldGenerator func(s *ast.StructType, comments []*ast.Comment) TextArea
+type ImportGenerator func(f *ast.File) TextArea
 
 var (
-	fieldProcessor  FieldProcessor
-	structProcessor StructProcessor
-	importProcessor ImportProcessor
+	tagGenerator    TagGenerator
+	fieldGenerator  FieldGenerator
+	importGenerator ImportGenerator
 )
 
-func RegisterFieldProcessor(p FieldProcessor) {
-	fieldProcessor = p
+func RegisterTagGenerator(p TagGenerator) {
+	tagGenerator = p
 }
 
-func RegisterStructProcessor(p StructProcessor) {
-	structProcessor = p
+func RegisterFieldGenerator(p FieldGenerator) {
+	fieldGenerator = p
 }
 
-func RegisterImportProcessor(p ImportProcessor) {
-	importProcessor = p
+func RegisterImportGenerator(p ImportGenerator) {
+	importGenerator = p
 }
 
 type TextArea interface {
 	Inject(content []byte) []byte
 }
 
-func Load(path string) (areas []TextArea, err error) {
+func Load(filename string) (areas []TextArea, err error) {
 	var fileSet = token.NewFileSet()
-	file, err := parser.ParseFile(fileSet, path, nil, parser.ParseComments)
+	file, err := parser.ParseFile(fileSet, filename, nil, parser.ParseComments)
 	if err != nil {
 		return nil, err
 	}
 
-	if importProcessor != nil {
-		var nArea = importProcessor(file)
+	if importGenerator != nil {
+		var nArea = importGenerator(file)
 		if nArea != nil {
 			areas = append(areas, nArea)
 		}
 	}
 
-	for _, decl := range file.Decls {
-		var genDecl, _ = decl.(*ast.GenDecl)
-		if genDecl == nil {
+	for _, dec := range file.Decls {
+		var genDec, ok = dec.(*ast.GenDecl)
+		if !ok {
 			continue
 		}
 
-		for _, spec := range genDecl.Specs {
+		for _, spec := range genDec.Specs {
 			var nAreas []TextArea
 			switch rSpec := spec.(type) {
 			case *ast.TypeSpec:
-				nAreas = parseType(genDecl, rSpec)
+				nAreas = parseType(genDec, rSpec)
 			}
 			areas = append(areas, nAreas...)
 		}
@@ -68,30 +68,30 @@ func Load(path string) (areas []TextArea, err error) {
 	return
 }
 
-func parseType(genDecl *ast.GenDecl, rSpec *ast.TypeSpec) []TextArea {
+func parseType(genDec *ast.GenDecl, rSpec *ast.TypeSpec) []TextArea {
 	switch rType := rSpec.Type.(type) {
 	case *ast.StructType:
-		return parseStruct(genDecl, rType)
+		return parseStruct(genDec, rType)
 	}
 	return nil
 }
 
-func parseStruct(genDecl *ast.GenDecl, structType *ast.StructType) (areas []TextArea) {
+func parseStruct(genDec *ast.GenDecl, structType *ast.StructType) (areas []TextArea) {
 	if structType == nil {
 		return nil
 	}
 
 	for _, field := range structType.Fields.List {
-		if fieldProcessor != nil {
-			var nArea = fieldProcessor(field)
+		if tagGenerator != nil {
+			var nArea = tagGenerator(field)
 			if nArea != nil {
 				areas = append(areas, nArea)
 			}
 		}
 	}
 
-	if structProcessor != nil && genDecl.Doc != nil {
-		var nArea = structProcessor(structType, genDecl.Doc.List)
+	if fieldGenerator != nil && genDec.Doc != nil {
+		var nArea = fieldGenerator(structType, genDec.Doc.List)
 		if nArea != nil {
 			areas = append(areas, nArea)
 		}
@@ -99,13 +99,13 @@ func parseStruct(genDecl *ast.GenDecl, structType *ast.StructType) (areas []Text
 	return areas
 }
 
-func Write(path string, areas []TextArea) (err error) {
-	file, err := os.Open(path)
+func Write(filename string, areas []TextArea) (err error) {
+	file, err := os.Open(filename)
 	if err != nil {
 		return err
 	}
 
-	content, err := ioutil.ReadAll(file)
+	content, err := io.ReadAll(file)
 	if err != nil {
 		return
 	}
@@ -119,7 +119,7 @@ func Write(path string, areas []TextArea) (err error) {
 		content = area.Inject(content)
 	}
 
-	if err = ioutil.WriteFile(path, content, 0644); err != nil {
+	if err = os.WriteFile(filename, content, 0644); err != nil {
 		return err
 	}
 

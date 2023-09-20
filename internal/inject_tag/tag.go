@@ -16,17 +16,19 @@ var (
 	tagInject   = regexp.MustCompile("`.+`$")
 )
 
-// NewProcessField 生成字段的 tag 信息，包含两个功能：
+// NewTagGenerator 生成字段的 tag 信息，包含两个功能：
+//
 // 1、根据字段的注释 @GoTag() 生成 tag，如：根据 @GoTag(bson:"_id") 生成 bson:"_id"；
+//
 // 2、根据字段的注释 @GoReTag() 替换 tag，如：根据 @GoReTag(bson:"_id") 生成 bson:"_id"。如果该字段有名为 bson 的 tag，则替换该 bson tag 的内容为 _id，如果该字段没有 bson tag，则会添加 bson:"_id"；
-// 3、根据参数 tag 为字段生成 tag；
-// 生成的 tag 不会覆盖原有的 tag，会追加在原有 tag 的后面，如果 tag 已经存在，则不会重复生成。
-func NewProcessField(s string) internal.FieldProcessor {
-	s = strings.TrimSpace(s)
+//
+// 3、根据参数 tag 为字段生成 tag，生成的 tag 不会覆盖原有的 tag，会追加在原有 tag 的后面，如果 tag 已经存在，则不会重复生成。
+func NewTagGenerator(tag string) internal.TagGenerator {
+	tag = strings.TrimSpace(tag)
 
 	var nTags []string
-	if s != "" {
-		nTags = strings.Split(s, "|")
+	if tag != "" {
+		nTags = strings.Split(tag, "|")
 	}
 	return func(field *ast.Field) internal.TextArea {
 		var iTags = make([]string, 0, 2+len(nTags))
@@ -99,6 +101,7 @@ func ParseTag(text string, iTags, rTags []string) ([]string, []string) {
 }
 
 // FindTagString 从字符串中提取出要注入的 tag 字符串内容。
+//
 // 如：从 @GoTag(bson:"_id") 提取出 bson:"_id"。
 func FindTagString(s string) (tag string) {
 	var match = iTagComment.FindStringSubmatch(s)
@@ -109,6 +112,7 @@ func FindTagString(s string) (tag string) {
 }
 
 // FindReTagString 从字符串中提取出要替换的 tag 字符串内容。
+//
 // 如：从 @GoReTag(bson:"_id") 提取出 bson:"_id"。
 func FindReTagString(s string) (tag string) {
 	var match = rTagComment.FindStringSubmatch(s)

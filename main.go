@@ -30,9 +30,9 @@ func main() {
 		return
 	}
 
-	internal.RegisterFieldProcessor(inject_tag.NewProcessField(tag))
-	internal.RegisterStructProcessor(inject_field.NewProcessStruct())
-	internal.RegisterImportProcessor(inject_import.NewProcessImport())
+	internal.RegisterTagGenerator(inject_tag.NewTagGenerator(tag))
+	internal.RegisterFieldGenerator(inject_field.NewFieldGenerator())
+	internal.RegisterImportGenerator(inject_import.NewImportGenerator())
 
 	// 处理目录
 	if input != "" {
@@ -46,34 +46,32 @@ func main() {
 				return err
 			}
 
-			if !strings.HasSuffix(strings.ToLower(info.Name()), ".go") {
-				return nil
-			}
-
 			return parse(path)
 		})
 	}
 
 	// 处理文件
 	if file != "" {
-		var files = strings.Split(file, "|")
-		for _, path := range files {
-			if strings.HasSuffix(strings.ToLower(path), ".go") {
-				parse(path)
-			}
+		var filenames = strings.Split(file, "|")
+		for _, filename := range filenames {
+			parse(filename)
 		}
 	}
 }
 
-func parse(path string) (err error) {
+func parse(filename string) (err error) {
+	if !strings.HasSuffix(strings.ToLower(filename), ".go") {
+		return nil
+	}
+
 	var areas []internal.TextArea
-	areas, err = internal.Load(path)
+	areas, err = internal.Load(filename)
 	if err != nil {
 		log.Fatal(err)
 		return err
 	}
 
-	if err = internal.Write(path, areas); err != nil {
+	if err = internal.Write(filename, areas); err != nil {
 		log.Fatal(err)
 		return err
 	}
