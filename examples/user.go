@@ -4,6 +4,7 @@ package examples
 
 // @GoImport("time")
 
+// User
 // @GoField(Age int)
 // @GoField(CreatedAt *time.Time)
 type User struct {

@@ -108,6 +108,9 @@ func (this *TextArea) Inject(content []byte) []byte {
 
 	var text = make([]byte, 0, 1024)
 	var buf = bytes.NewBuffer(text)
+
+	buf.Write(content[:this.start])
+
 	buf.WriteString("\n// inject import \n")
 	buf.WriteString("import (\n")
 	for _, im := range this.nImport {
@@ -116,11 +119,7 @@ func (this *TextArea) Inject(content []byte) []byte {
 		buf.WriteByte('\n')
 	}
 	buf.WriteString(")\n")
-	text = buf.Bytes()
 
-	var injected = make([]byte, 0, len(content))
-	injected = append(injected, content[:this.start]...)
-	injected = append(injected, text...)
-	injected = append(injected, content[this.start:]...)
-	return injected
+	buf.Write(content[this.start:])
+	return buf.Bytes()
 }

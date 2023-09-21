@@ -96,6 +96,9 @@ func (this *TextArea) Inject(content []byte) []byte {
 
 	var text = make([]byte, 0, 1024)
 	var buf = bytes.NewBuffer(text)
+
+	buf.Write(content[:this.start])
+
 	buf.WriteString("\t// inject fields \n")
 	for _, field := range this.fields {
 		buf.WriteByte('\t')
@@ -104,13 +107,9 @@ func (this *TextArea) Inject(content []byte) []byte {
 		buf.WriteString(field.Type)
 		buf.WriteByte('\n')
 	}
-	text = buf.Bytes()
 
-	var injected = make([]byte, 0, len(content))
-	injected = append(injected, content[:this.start]...)
-	injected = append(injected, text...)
-	injected = append(injected, content[this.end:]...)
-	return injected
+	buf.Write(content[this.end:])
+	return buf.Bytes()
 }
 
 type Field struct {
