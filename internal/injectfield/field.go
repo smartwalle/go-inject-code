@@ -65,7 +65,7 @@ func (this *FieldGenerator) Struct(structType *ast.StructType, comments []*ast.C
 	return nArea
 }
 
-func (this *FieldGenerator) Field(field *ast.Field) internal.TextArea {
+func (this *FieldGenerator) FieldList(fieldList *ast.FieldList) internal.TextArea {
 	return nil
 }
 

@@ -16,7 +16,7 @@ type Processor interface {
 
 	Struct(structType *ast.StructType, comments []*ast.Comment) TextArea
 
-	Field(field *ast.Field) TextArea
+	FieldList(fieldList *ast.FieldList) TextArea
 }
 
 var processors []Processor
@@ -95,18 +95,16 @@ func processStruct(p Processor, dec *ast.GenDecl, structType *ast.StructType) (a
 		return nil
 	}
 
-	for _, field := range structType.Fields.List {
-		var area = p.Field(field)
-		if area != nil {
-			areas = append(areas, area)
-		}
+	var area = p.FieldList(structType.Fields)
+	if area != nil {
+		areas = append(areas, area)
 	}
 
 	var comments []*ast.Comment
 	if dec.Doc != nil {
 		comments = dec.Doc.List
 	}
-	var area = p.Struct(structType, comments)
+	area = p.Struct(structType, comments)
 	if area != nil {
 		areas = append(areas, area)
 	}

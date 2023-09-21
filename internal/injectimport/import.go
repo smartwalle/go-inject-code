@@ -64,7 +64,7 @@ func (this *ImportGenerator) Struct(structType *ast.StructType, comments []*ast.
 	return nil
 }
 
-func (this *ImportGenerator) Field(field *ast.Field) internal.TextArea {
+func (this *ImportGenerator) FieldList(fieldList *ast.FieldList) internal.TextArea {
 	return nil
 }
 

@@ -47,7 +47,18 @@ func (this *TagGenerator) Struct(structType *ast.StructType, comments []*ast.Com
 	return nil
 }
 
-func (this *TagGenerator) Field(field *ast.Field) internal.TextArea {
+func (this *TagGenerator) FieldList(fieldList *ast.FieldList) internal.TextArea {
+	var areas = make(TextAreas, 0, len(fieldList.List))
+	for _, field := range fieldList.List {
+		var area = this.field(field)
+		if area != nil {
+			areas = append(areas, area)
+		}
+	}
+	return areas
+}
+
+func (this *TagGenerator) field(field *ast.Field) *TextArea {
 	var iTags = make([]string, 0, 2+len(this.tags))
 	var rTags = make([]string, 0, 2)
 
@@ -141,6 +152,16 @@ func findReTagString(s string) (tag string) {
 		tag = match[1]
 	}
 	return
+}
+
+type TextAreas []*TextArea
+
+func (this TextAreas) Inject(content []byte) []byte {
+	for i := range this {
+		var area = this[len(this)-i-1]
+		content = area.Inject(content)
+	}
+	return content
 }
 
 type TextArea struct {
