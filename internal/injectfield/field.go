@@ -94,7 +94,7 @@ func (this *TextArea) Inject(content []byte) []byte {
 		return content
 	}
 
-	var text = make([]byte, 0, 1024)
+	var text = make([]byte, 0, len(content)+1024)
 	var buf = bytes.NewBuffer(text)
 
 	buf.Write(content[:this.start])
