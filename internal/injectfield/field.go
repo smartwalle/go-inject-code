@@ -26,16 +26,16 @@ func (this *BuildFieldProcessor) File(file *ast.File) internal.TextArea {
 }
 
 func (this *BuildFieldProcessor) Struct(structType *ast.StructType, comments []*ast.Comment) internal.TextArea {
-	var exists = make(map[string]struct{}) // 用于记录结构体已有的字段，避免重复添加
+	var fields = make(map[string]struct{}) // 用于记录结构体已有的字段，避免重复添加
 
 	// 记录结构体已有字段
 	for _, field := range structType.Fields.List {
 		if len(field.Names) > 0 {
-			exists[field.Names[0].Name] = struct{}{}
+			fields[field.Names[0].Name] = struct{}{}
 		}
 	}
 
-	var fields = make([]*Field, 0, len(comments))
+	var nFields = make([]*Field, 0, len(comments))
 	// 从注释中提取要添加的字段信息
 	for _, comment := range comments {
 		var field = findFieldString(comment.Text)
@@ -44,24 +44,24 @@ func (this *BuildFieldProcessor) Struct(structType *ast.StructType, comments []*
 		}
 
 		// 检测是否已经存在
-		if _, ok := exists[field.Name]; ok {
+		if _, ok := fields[field.Name]; ok {
 			continue
 		}
 
-		exists[field.Name] = struct{}{}
+		fields[field.Name] = struct{}{}
 
 		// 记录要添加的字段信息
-		fields = append(fields, field)
+		nFields = append(nFields, field)
 	}
 
-	if len(fields) == 0 {
+	if len(nFields) == 0 {
 		return nil
 	}
 
 	var nArea = &TextArea{}
 	nArea.start = int(structType.Fields.Closing) - 1
 	nArea.end = int(structType.Fields.Closing) - 1
-	nArea.fields = fields
+	nArea.fields = nFields
 	return nArea
 }
 
