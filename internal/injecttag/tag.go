@@ -17,37 +17,37 @@ var (
 	matchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")
 )
 
-// TagGenerator 生成字段的 tag 信息，包含两个功能：
+// BuildTagProcessor 生成字段的 tag 信息，包含两个功能：
 //
 // 1、根据字段的注释 @GoTag() 生成 tag，如：根据 @GoTag(bson:"_id") 生成 bson:"_id"；
 //
 // 2、根据字段的注释 @GoReTag() 替换 tag，如：根据 @GoReTag(bson:"_id") 生成 bson:"_id"。如果该字段有名为 bson 的 tag，则替换该 bson tag 的内容为 _id，如果该字段没有 bson tag，则会添加 bson:"_id"；
 //
 // 3、根据参数 tag 为字段生成 tag，生成的 tag 不会覆盖原有的 tag，会追加在原有 tag 的后面，如果 tag 已经存在，则不会重复生成。
-type TagGenerator struct {
+type BuildTagProcessor struct {
 	tags []string
 }
 
-func NewTagGenerator(tag string) *TagGenerator {
+func NewBuildTagProcessor(tag string) *BuildTagProcessor {
 	tag = strings.TrimSpace(tag)
 	var nTags []string
 	if tag != "" {
 		nTags = strings.Split(tag, "|")
 	}
-	var p = &TagGenerator{}
+	var p = &BuildTagProcessor{}
 	p.tags = nTags
 	return p
 }
 
-func (this *TagGenerator) File(file *ast.File) internal.TextArea {
+func (this *BuildTagProcessor) File(file *ast.File) internal.TextArea {
 	return nil
 }
 
-func (this *TagGenerator) Struct(structType *ast.StructType, comments []*ast.Comment) internal.TextArea {
+func (this *BuildTagProcessor) Struct(structType *ast.StructType, comments []*ast.Comment) internal.TextArea {
 	return nil
 }
 
-func (this *TagGenerator) FieldList(fieldList *ast.FieldList) internal.TextArea {
+func (this *BuildTagProcessor) FieldList(fieldList *ast.FieldList) internal.TextArea {
 	var areas = make(TextAreas, 0, len(fieldList.List))
 	for _, field := range fieldList.List {
 		var area = this.field(field)
@@ -58,7 +58,7 @@ func (this *TagGenerator) FieldList(fieldList *ast.FieldList) internal.TextArea 
 	return areas
 }
 
-func (this *TagGenerator) field(field *ast.Field) *TextArea {
+func (this *BuildTagProcessor) field(field *ast.Field) *TextArea {
 	var iTags = make([]string, 0, 2+len(this.tags))
 	var rTags = make([]string, 0, 2)
 

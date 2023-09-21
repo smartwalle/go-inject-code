@@ -30,9 +30,9 @@ func main() {
 		return
 	}
 
-	internal.RegisterProcessor(injectimport.NewImportGenerator())
-	internal.RegisterProcessor(injectfield.NewFieldGenerator())
-	internal.RegisterProcessor(injecttag.NewTagGenerator(vTag))
+	internal.RegisterProcessor(injectimport.NewBuildImportProcessor())
+	internal.RegisterProcessor(injectfield.NewBuildFieldProcessor())
+	internal.RegisterProcessor(injecttag.NewBuildTagProcessor(vTag))
 
 	// 处理目录
 	if vFilepath != "" {

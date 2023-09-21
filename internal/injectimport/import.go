@@ -11,17 +11,17 @@ var (
 	importComment = regexp.MustCompile(`[\s\S^@]*@GoImport\((.*)\).*?`)
 )
 
-// ImportGenerator 生成包导入信息
+// BuildImportProcessor 生成包导入信息
 //
 // 根据注释 @GoImport() 生成 import，如：从 @GoImport("time") 提取出 "time"
-type ImportGenerator struct {
+type BuildImportProcessor struct {
 }
 
-func NewImportGenerator() *ImportGenerator {
-	return &ImportGenerator{}
+func NewBuildImportProcessor() *BuildImportProcessor {
+	return &BuildImportProcessor{}
 }
 
-func (this *ImportGenerator) File(file *ast.File) internal.TextArea {
+func (this *BuildImportProcessor) File(file *ast.File) internal.TextArea {
 	var imports = make(map[string]struct{}) // 用于记录已导入的包，避免重复导入
 
 	var start = 0 // 用于记录包导入的位置
@@ -60,11 +60,11 @@ func (this *ImportGenerator) File(file *ast.File) internal.TextArea {
 	return nArea
 }
 
-func (this *ImportGenerator) Struct(structType *ast.StructType, comments []*ast.Comment) internal.TextArea {
+func (this *BuildImportProcessor) Struct(structType *ast.StructType, comments []*ast.Comment) internal.TextArea {
 	return nil
 }
 
-func (this *ImportGenerator) FieldList(fieldList *ast.FieldList) internal.TextArea {
+func (this *BuildImportProcessor) FieldList(fieldList *ast.FieldList) internal.TextArea {
 	return nil
 }
 

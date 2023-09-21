@@ -11,21 +11,21 @@ var (
 	fieldComment = regexp.MustCompile(`[\s\S^@]*@GoField\(\s*(\S+)\s+(.*)\s*\).*?`)
 )
 
-// FieldGenerator 生成字段信息
+// BuildFieldProcessor 生成字段信息
 //
 // 根据注释 @GoField() 生成字段，如：从 @GoField(Age int) 提取出 Age int
-type FieldGenerator struct {
+type BuildFieldProcessor struct {
 }
 
-func NewFieldGenerator() *FieldGenerator {
-	return &FieldGenerator{}
+func NewBuildFieldProcessor() *BuildFieldProcessor {
+	return &BuildFieldProcessor{}
 }
 
-func (this *FieldGenerator) File(file *ast.File) internal.TextArea {
+func (this *BuildFieldProcessor) File(file *ast.File) internal.TextArea {
 	return nil
 }
 
-func (this *FieldGenerator) Struct(structType *ast.StructType, comments []*ast.Comment) internal.TextArea {
+func (this *BuildFieldProcessor) Struct(structType *ast.StructType, comments []*ast.Comment) internal.TextArea {
 	var exists = make(map[string]struct{}) // 用于记录结构体已有的字段，避免重复添加
 
 	// 记录结构体已有字段
@@ -65,7 +65,7 @@ func (this *FieldGenerator) Struct(structType *ast.StructType, comments []*ast.C
 	return nArea
 }
 
-func (this *FieldGenerator) FieldList(fieldList *ast.FieldList) internal.TextArea {
+func (this *BuildFieldProcessor) FieldList(fieldList *ast.FieldList) internal.TextArea {
 	return nil
 }
 
