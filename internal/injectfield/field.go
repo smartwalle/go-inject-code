@@ -38,7 +38,7 @@ func (this *BuildFieldProcessor) Struct(structType *ast.StructType, comments []*
 	var nFields = make([]*Field, 0, len(comments))
 	// 从注释中提取要添加的字段信息
 	for _, comment := range comments {
-		var field = findFieldString(comment.Text)
+		var field = findField(comment.Text)
 		if field == nil {
 			continue
 		}
@@ -69,10 +69,10 @@ func (this *BuildFieldProcessor) FieldList(fieldList *ast.FieldList) internal.Te
 	return nil
 }
 
-// findFieldString 从字符串中提取出要注入的字段内容。
+// findField 从字符串中提取出要注入的字段内容。
 //
 // 如：从 @GoField(Age int) 提取出 Age int。
-func findFieldString(s string) (field *Field) {
+func findField(s string) (field *Field) {
 	var match = fieldComment.FindStringSubmatch(s)
 	if len(match) == 3 {
 		field = &Field{}

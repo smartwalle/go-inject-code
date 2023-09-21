@@ -113,12 +113,12 @@ func parseTag(text string, iTags, rTags []string) ([]string, []string) {
 	for _, s := range ts {
 		if s != "" {
 			s = "@" + s
-			var tag = findTagString(s)
+			var tag = findTag(s)
 			if tag != "" {
 				iTags = append(iTags, tag)
 			}
 
-			tag = findReTagString(s)
+			tag = findReTag(s)
 			if tag != "" {
 				rTags = append(rTags, tag)
 			}
@@ -132,10 +132,10 @@ func snakeCase(str string) string {
 	return strings.ToLower(snake)
 }
 
-// findTagString 从字符串中提取出要注入的 tag 字符串内容。
+// findTag 从字符串中提取出要注入的 tag 字符串内容。
 //
 // 如：从 @GoTag(bson:"_id") 提取出 bson:"_id"。
-func findTagString(s string) (tag string) {
+func findTag(s string) (tag string) {
 	var match = iTagComment.FindStringSubmatch(s)
 	if len(match) == 2 {
 		tag = match[1]
@@ -143,10 +143,10 @@ func findTagString(s string) (tag string) {
 	return
 }
 
-// findReTagString 从字符串中提取出要替换的 tag 字符串内容。
+// findReTag 从字符串中提取出要替换的 tag 字符串内容。
 //
 // 如：从 @GoReTag(bson:"_id") 提取出 bson:"_id"。
-func findReTagString(s string) (tag string) {
+func findReTag(s string) (tag string) {
 	var match = rTagComment.FindStringSubmatch(s)
 	if len(match) == 2 {
 		tag = match[1]

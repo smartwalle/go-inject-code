@@ -69,7 +69,7 @@ func (this *BuildImportProcessor) FieldList(fieldList *ast.FieldList) internal.T
 }
 
 func parseImport(imports map[string]struct{}, text string, nImports []string) []string {
-	var nImport = findImportString(text)
+	var nImport = findImport(text)
 	if nImport == "" {
 		return nImports
 	}
@@ -85,10 +85,10 @@ func parseImport(imports map[string]struct{}, text string, nImports []string) []
 	return nImports
 }
 
-// findImportString 从字符串中提取出要导入的包内容。
+// findImport 从字符串中提取出要导入的包内容。
 //
 // 如：从 @GoImport("time") 提取出 "time"。
-func findImportString(s string) string {
+func findImport(s string) string {
 	var match = importComment.FindStringSubmatch(s)
 	if len(match) == 2 {
 		return match[1]
