@@ -36,7 +36,7 @@ func (this *BuildImportProcessor) File(file *ast.File) internal.TextArea {
 	}
 
 	if start == 0 {
-		// 如果原来没有导入包，则重包名后开始
+		// 如果原来没有导入包，则从包名后开始
 		start = int(file.Name.End())
 	}
 
