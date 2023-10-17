@@ -21,11 +21,11 @@ func NewBuildFieldProcessor() *BuildFieldProcessor {
 	return &BuildFieldProcessor{}
 }
 
-func (this *BuildFieldProcessor) File(file *ast.File) internal.TextArea {
+func (p *BuildFieldProcessor) File(file *ast.File) internal.TextArea {
 	return nil
 }
 
-func (this *BuildFieldProcessor) Struct(structType *ast.StructType, comments []*ast.Comment) internal.TextArea {
+func (p *BuildFieldProcessor) Struct(structType *ast.StructType, comments []*ast.Comment) internal.TextArea {
 	var fields = make(map[string]struct{}) // 用于记录结构体已有的字段，避免重复添加
 
 	// 记录结构体已有字段
@@ -65,7 +65,7 @@ func (this *BuildFieldProcessor) Struct(structType *ast.StructType, comments []*
 	return nArea
 }
 
-func (this *BuildFieldProcessor) FieldList(fieldList *ast.FieldList) internal.TextArea {
+func (p *BuildFieldProcessor) FieldList(fieldList *ast.FieldList) internal.TextArea {
 	return nil
 }
 
@@ -89,18 +89,18 @@ type TextArea struct {
 	fields []*Field
 }
 
-func (this *TextArea) Inject(content []byte) []byte {
-	if len(this.fields) == 0 {
+func (area *TextArea) Inject(content []byte) []byte {
+	if len(area.fields) == 0 {
 		return content
 	}
 
 	var text = make([]byte, 0, len(content)+1024)
 	var buf = bytes.NewBuffer(text)
 
-	buf.Write(content[:this.start])
+	buf.Write(content[:area.start])
 
 	buf.WriteString("\t// inject fields \n")
-	for _, field := range this.fields {
+	for _, field := range area.fields {
 		buf.WriteByte('\t')
 		buf.WriteString(field.Name)
 		buf.WriteByte(' ')
@@ -108,7 +108,7 @@ func (this *TextArea) Inject(content []byte) []byte {
 		buf.WriteByte('\n')
 	}
 
-	buf.Write(content[this.end:])
+	buf.Write(content[area.end:])
 	return buf.Bytes()
 }
 

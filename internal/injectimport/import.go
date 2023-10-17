@@ -21,7 +21,7 @@ func NewBuildImportProcessor() *BuildImportProcessor {
 	return &BuildImportProcessor{}
 }
 
-func (this *BuildImportProcessor) File(file *ast.File) internal.TextArea {
+func (p *BuildImportProcessor) File(file *ast.File) internal.TextArea {
 	var imports = make(map[string]struct{}) // 用于记录已导入的包，避免重复导入
 
 	var start = 0 // 用于记录包导入的位置
@@ -60,11 +60,11 @@ func (this *BuildImportProcessor) File(file *ast.File) internal.TextArea {
 	return nArea
 }
 
-func (this *BuildImportProcessor) Struct(structType *ast.StructType, comments []*ast.Comment) internal.TextArea {
+func (p *BuildImportProcessor) Struct(structType *ast.StructType, comments []*ast.Comment) internal.TextArea {
 	return nil
 }
 
-func (this *BuildImportProcessor) FieldList(fieldList *ast.FieldList) internal.TextArea {
+func (p *BuildImportProcessor) FieldList(fieldList *ast.FieldList) internal.TextArea {
 	return nil
 }
 
@@ -101,25 +101,25 @@ type TextArea struct {
 	nImport []string
 }
 
-func (this *TextArea) Inject(content []byte) []byte {
-	if len(this.nImport) == 0 {
+func (area *TextArea) Inject(content []byte) []byte {
+	if len(area.nImport) == 0 {
 		return content
 	}
 
 	var text = make([]byte, 0, len(content)+1024)
 	var buf = bytes.NewBuffer(text)
 
-	buf.Write(content[:this.start])
+	buf.Write(content[:area.start])
 
 	buf.WriteString("\n// inject import \n")
 	buf.WriteString("import (\n")
-	for _, im := range this.nImport {
+	for _, im := range area.nImport {
 		buf.WriteByte('\t')
 		buf.WriteString(im)
 		buf.WriteByte('\n')
 	}
 	buf.WriteString(")\n")
 
-	buf.Write(content[this.start:])
+	buf.Write(content[area.start:])
 	return buf.Bytes()
 }
